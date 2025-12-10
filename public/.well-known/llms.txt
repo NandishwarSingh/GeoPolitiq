@@ -1,0 +1,29 @@
+# GeoPolitiq
+
+> Geopolitical intelligence and analysis platform
+
+GeoPolitiq provides curated, AI-analyzed geopolitical news with expert commentary on global events, international relations, and political developments.
+
+## Content Overview
+
+- Daily geopolitical news analysis
+- Topic clusters: Global, Asia-Pacific, Europe, Americas, Middle East, Africa
+- Tags for granular topic navigation
+- AI-generated summaries (TL;DR) for quick reading
+
+## Key Features
+
+- Curated news from reliable international sources
+- Topic-based content organization
+- Related article recommendations
+- Mobile-responsive design
+
+## API Access
+
+- `/api/posts` - Paginated JSON feed
+- `/sitemap.xml` - Complete sitemap
+
+## Detailed Documentation
+
+For comprehensive API documentation and content structure:
+- [Full Context](/llms-full.txt)

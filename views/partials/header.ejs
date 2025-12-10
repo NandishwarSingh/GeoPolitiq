@@ -1,0 +1,46 @@
+<header class="masthead">
+    <div class="masthead-container">
+        <div class="masthead-top">
+            <span class="masthead-date">
+                <%= new Date().toLocaleDateString('en-US', { weekday: 'long' , year: 'numeric' , month: 'long' ,
+                    day: 'numeric' }) %>
+            </span>
+            <nav class="masthead-nav-top">
+                <a href="/tags">Tags</a>
+                <a href="/about">About</a>
+                <% if (typeof isAdmin !=='undefined' && isAdmin) { %>
+                    <a href="/admin/posts">Admin</a>
+                    <% } %>
+                        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode"
+                            title="Toggle theme">
+                            <span class="theme-toggle-icon icon-sun">☀️</span>
+                            <span class="theme-toggle-icon icon-moon">🌙</span>
+                        </button>
+            </nav>
+        </div>
+
+        <div class="masthead-brand">
+            <h1 class="masthead-title">
+                <a href="/">Geo Politiq</a>
+            </h1>
+            <p class="masthead-tagline">Global Intelligence & Analysis</p>
+        </div>
+
+        <nav class="masthead-nav-main">
+            <a href="/">Latest</a>
+            <% if (typeof popularTags !=='undefined' && popularTags && popularTags.length> 0) { %>
+                <% popularTags.slice(0, 6).forEach(function(tag) { %>
+                    <a href="/tag/<%= tag.name %>">
+                        <%= tag.name.charAt(0).toUpperCase() + tag.name.slice(1) %>
+                    </a>
+                    <% }); %>
+                        <% } else { %>
+                            <a href="/tag/global">Global</a>
+                            <a href="/tag/usa">USA</a>
+                            <a href="/tag/india">India</a>
+                            <a href="/tag/uk">UK</a>
+                            <a href="/tag/europe">Europe</a>
+                            <% } %>
+        </nav>
+    </div>
+</header>

@@ -1,0 +1,305 @@
+<div class="feed-container">
+
+    <% if (featuredPost) { %>
+        <!-- Lead Section: Featured Story + Sidebar -->
+        <section class="lead-section">
+            <article class="lead-story">
+                <% if (featuredPost.topicCluster) { %>
+                    <div class="kicker">
+                        <%= featuredPost.topicCluster %>
+                    </div>
+                    <% } %>
+                        <h1 class="headline-xl">
+                            <a href="/post/<%= featuredPost.slug %>">
+                                <%= featuredPost.title %>
+                            </a>
+                        </h1>
+                        <p class="subhead">
+                            <%= featuredPost.tldr %>
+                        </p>
+
+                        <% if (featuredPost.featuredImage) { %>
+                            <% // Generate responsive image URLs for Unsplash const
+                                baseUrl=featuredPost.featuredImage.split('?')[0]; const
+                                isUnsplash=baseUrl.includes('unsplash.com'); const altText=featuredPost.imageAlt ||
+                                featuredPost.title; %>
+                                <img src="<%= isUnsplash ? baseUrl + '?w=600&q=75' : featuredPost.featuredImage %>"
+                                    srcset="<%= isUnsplash ? baseUrl + '?w=400&q=70 400w, ' + baseUrl + '?w=600&q=75 600w, ' + baseUrl + '?w=800&q=80 800w' : '' %>"
+                                    sizes="(max-width: 480px) 100vw, (max-width: 768px) 80vw, 600px"
+                                    alt="<%= altText %>" class="lead-image" loading="eager" decoding="async"
+                                    fetchpriority="high">
+                                <% } %>
+
+                                    <div class="byline">
+                                        <% if (featuredPost.publishTime) { %>
+                                            <%= new Date(featuredPost.publishTime).toLocaleDateString('en-US', {
+                                                month: 'long' , day: 'numeric' , year: 'numeric' }) %>
+                                                <% } %>
+                                                    <% if (featuredPost.tags && featuredPost.tags.length> 0) { %>
+                                                        &nbsp;•&nbsp;
+                                                        <% featuredPost.tags.slice(0, 3).forEach(function(tag, i) { %>
+                                                            <a href="/tag/<%= tag %>">
+                                                                <%= tag %>
+                                                            </a>
+                                                            <%= i < 2 && i < featuredPost.tags.length - 1 ? ', ' : '' %>
+                                                                <% }); %>
+                                                                    <% } %>
+                                    </div>
+            </article>
+
+            <aside class="lead-sidebar hide-mobile">
+                <% if (sidebarPosts && sidebarPosts.length> 0) { %>
+                    <% sidebarPosts.forEach(function(post) { %>
+                        <article class="sidebar-story">
+                            <% if (post.topicCluster) { %>
+                                <div class="kicker">
+                                    <%= post.topicCluster %>
+                                </div>
+                                <% } %>
+                                    <h3 class="headline-md">
+                                        <a href="/post/<%= post.slug %>">
+                                            <%= post.title %>
+                                        </a>
+                                    </h3>
+                                    <p class="snippet">
+                                        <%= post.tldr.substring(0, 120) %>
+                                            <%= post.tldr.length> 120 ? '...' : '' %>
+                                    </p>
+                        </article>
+                        <% }); %>
+                            <% } %>
+            </aside>
+        </section>
+        <% } else { %>
+
+            <!-- Empty State -->
+            <section class="empty-state">
+                <span class="empty-icon">📰</span>
+                <h1 class="headline-lg">Welcome to GeoPolitiq</h1>
+                <p>No articles published yet. The newsroom is preparing your first story.</p>
+            </section>
+            <% } %>
+
+                <!-- Main News Feed -->
+                <% if (posts && posts.length> 0) { %>
+                    <section>
+                        <div class="section-divider">
+                            <span class="section-label">Latest Updates</span>
+                        </div>
+
+                        <div class="news-feed">
+                            <%# On mobile: show all posts. On desktop: hide first 4 posts %>
+                                <% posts.forEach(function(post, index) { %>
+                                    <a href="/post/<%= post.slug %>"
+                                        class="feed-item<%= index < 4 ? ' mobile-only-feed-item' : '' %>">
+                                        <% if (post.featuredImage) { %>
+                                            <img src="<%= post.featuredImage %>"
+                                                alt="<%= post.imageAlt || post.title %>" class="feed-image"
+                                                loading="lazy" decoding="async">
+                                            <% } else { %>
+                                                <div class="feed-image feed-image-placeholder">🌐</div>
+                                                <% } %>
+
+                                                    <div class="feed-content">
+                                                        <div class="feed-meta">
+                                                            <% if (post.topicCluster) { %>
+                                                                <span class="feed-cluster">
+                                                                    <%= post.topicCluster %>
+                                                                </span>
+                                                                <% } %>
+                                                                    <% const now=new Date(); const pub=new
+                                                                        Date(post.publishTime); const diffMs=now - pub;
+                                                                        const diffMins=Math.floor(diffMs / 60000); const
+                                                                        diffHours=Math.floor(diffMs / 3600000); const
+                                                                        diffDays=Math.floor(diffMs / 86400000); let
+                                                                        relativeTime; if (diffMins < 60)
+                                                                        relativeTime=diffMins + 'm ago' ; else if
+                                                                        (diffHours < 24) relativeTime=diffHours
+                                                                        + 'h ago' ; else if (diffDays < 7)
+                                                                        relativeTime=diffDays + 'd ago' ; else
+                                                                        relativeTime=pub.toLocaleDateString('en-US', {
+                                                                        month: 'short' , day: 'numeric' }); %>
+                                                                        <span class="feed-date">
+                                                                            <%= relativeTime %>
+                                                                        </span>
+                                                        </div>
+
+                                                        <h3 class="feed-headline">
+                                                            <%= post.title %>
+                                                        </h3>
+                                                        <p class="feed-summary">
+                                                            <%= post.tldr %>
+                                                        </p>
+
+                                                        <% if (post.tags && post.tags.length> 0) { %>
+                                                            <div class="feed-tags">
+                                                                <% post.tags.slice(0, 4).forEach(function(tag) { %>
+                                                                    <span class="feed-tag">
+                                                                        <%= tag %>
+                                                                    </span>
+                                                                    <% }); %>
+                                                            </div>
+                                                            <% } %>
+                                                    </div>
+                                    </a>
+                                    <% }); %>
+                        </div>
+
+                        <!-- Infinite Scroll Loading Sentinel -->
+                        <div id="feed-sentinel" class="feed-sentinel" data-page="2" data-has-more="<%= hasNextPage %>">
+                            <div class="loading-spinner"></div>
+                            <span class="loading-text">Loading more stories...</span>
+                        </div>
+                        <div id="feed-end" class="feed-end" style="display: none;">
+                            <span>You've reached the end</span>
+                        </div>
+                    </section>
+                    <% } %>
+</div>
+
+<style>
+    /* Infinite Scroll Styles */
+    .feed-sentinel {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: var(--gap-md);
+        padding: var(--gap-xl);
+        color: var(--color-ink-muted);
+    }
+
+    .feed-sentinel[data-has-more="false"] {
+        display: none;
+    }
+
+    .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--color-ink-faded);
+        border-top-color: var(--color-red);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-text {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .feed-end {
+        text-align: center;
+        padding: var(--gap-xl);
+        color: var(--color-ink-muted);
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        border-top: var(--border-hair);
+    }
+</style>
+
+<script>
+    (function () {
+        const sentinel = document.getElementById('feed-sentinel');
+        const feedEnd = document.getElementById('feed-end');
+        const newsFeed = document.querySelector('.news-feed');
+
+        if (!sentinel || !newsFeed) return;
+
+        let isLoading = false;
+        let currentPage = parseInt(sentinel.dataset.page) || 2;
+        let hasMore = sentinel.dataset.hasMore === 'true';
+
+        function formatRelativeTime(dateStr) {
+            const pub = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - pub;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 60) return diffMins + 'm ago';
+            if (diffHours < 24) return diffHours + 'h ago';
+            if (diffDays < 7) return diffDays + 'd ago';
+            return pub.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function createPostHTML(post) {
+            const imgHtml = post.featuredImage
+                ? `<img src="${post.featuredImage}" alt="${post.imageAlt || post.title}" class="feed-image" loading="lazy" decoding="async">`
+                : `<div class="feed-image feed-image-placeholder">🌐</div>`;
+
+            const tagsHtml = post.tags && post.tags.length > 0
+                ? `<div class="feed-tags">${post.tags.slice(0, 4).map(t => `<span class="feed-tag">${t}</span>`).join('')}</div>`
+                : '';
+
+            const clusterHtml = post.topicCluster
+                ? `<span class="feed-cluster">${post.topicCluster}</span>`
+                : '';
+
+            return `
+            <a href="/post/${post.slug}" class="feed-item">
+                ${imgHtml}
+                <div class="feed-content">
+                    <div class="feed-meta">
+                        ${clusterHtml}
+                        <span class="feed-date">${formatRelativeTime(post.publishTime)}</span>
+                    </div>
+                    <h3 class="feed-headline">${post.title}</h3>
+                    <p class="feed-summary">${post.tldr}</p>
+                    ${tagsHtml}
+                </div>
+            </a>
+        `;
+        }
+
+        async function loadMorePosts() {
+            if (isLoading || !hasMore) return;
+
+            isLoading = true;
+            sentinel.style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/posts?page=${currentPage}&limit=5`);
+                const data = await response.json();
+
+                if (data.posts && data.posts.length > 0) {
+                    data.posts.forEach(post => {
+                        newsFeed.insertAdjacentHTML('beforeend', createPostHTML(post));
+                    });
+                    currentPage++;
+                    hasMore = data.hasMore;
+                    sentinel.dataset.hasMore = hasMore;
+                } else {
+                    hasMore = false;
+                }
+
+                if (!hasMore) {
+                    sentinel.style.display = 'none';
+                    feedEnd.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Intersection Observer for infinite scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && hasMore) {
+                    loadMorePosts();
+                }
+            });
+        }, { rootMargin: '200px' });
+
+        observer.observe(sentinel);
+    })();
+</script>

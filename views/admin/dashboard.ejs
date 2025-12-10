@@ -1,0 +1,80 @@
+<div class="admin-dashboard">
+    <header class="dashboard-header">
+        <h1>Dashboard</h1>
+        <a href="/admin/posts/new" class="btn btn-primary">
+            + New Post
+        </a>
+    </header>
+
+    <% if (posts && posts.length> 0) { %>
+        <div class="posts-table-container">
+            <table class="posts-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Tags</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% posts.forEach(function(post) { %>
+                        <tr>
+                            <td class="post-title-cell">
+                                <a href="/post/<%= post.slug %>" target="_blank" class="post-title-link">
+                                    <%= post.title %>
+                                        <span class="external-icon">↗</span>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="status-badge status-<%= post.status %>">
+                                    <%= post.status %>
+                                </span>
+                            </td>
+                            <td class="tags-cell">
+                                <% if (post.tags && post.tags.length> 0) { %>
+                                    <% post.tags.slice(0, 3).forEach(function(tag) { %>
+                                        <span class="tag tag-small">
+                                            <%= tag %>
+                                        </span>
+                                        <% }); %>
+                                            <% if (post.tags.length> 3) { %>
+                                                <span class="tag-more">+<%= post.tags.length - 3 %></span>
+                                                <% } %>
+                                                    <% } else { %>
+                                                        <span class="no-tags">—</span>
+                                                        <% } %>
+                            </td>
+                            <td class="date-cell">
+                                <%= new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short' ,
+                                    day: 'numeric' , year: 'numeric' }) %>
+                            </td>
+                            <td class="actions-cell">
+                                <a href="/admin/posts/<%= post._id %>/edit" class="btn btn-small btn-secondary">
+                                    Edit
+                                </a>
+                                <form action="/admin/posts/<%= post._id %>?_method=DELETE" method="POST"
+                                    class="delete-form"
+                                    onsubmit="return confirm('Are you sure you want to delete this post?')">
+                                    <button type="submit" class="btn btn-small btn-danger">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <% }); %>
+                </tbody>
+            </table>
+        </div>
+        <% } else { %>
+            <div class="empty-state">
+                <div class="empty-content">
+                    <span class="empty-icon">📝</span>
+                    <h2>No posts yet</h2>
+                    <p>Create your first post to get started.</p>
+                    <a href="/admin/posts/new" class="btn btn-primary">Create First Post</a>
+                </div>
+            </div>
+            <% } %>
+</div>

@@ -1,0 +1,84 @@
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-brand">
+            <div class="footer-title">Geo Politiq</div>
+            <p class="footer-description">
+                Your trusted source for geopolitical intelligence, in-depth analysis,
+                and breaking news from around the world. Understanding global events,
+                one story at a time.
+            </p>
+        </div>
+
+        <div class="footer-column">
+            <h4>Topics</h4>
+            <a href="/tag/analysis">Analysis</a>
+            <a href="/tag/breaking">Breaking News</a>
+            <a href="/tag/economy">Economy</a>
+            <a href="/tag/security">Security</a>
+            <a href="/tag/diplomacy">Diplomacy</a>
+        </div>
+
+        <div class="footer-column">
+            <h4>Regions</h4>
+            <a href="/tag/asia">Asia-Pacific</a>
+            <a href="/tag/europe">Europe</a>
+            <a href="/tag/americas">Americas</a>
+            <a href="/tag/middle-east">Middle East</a>
+            <a href="/tag/africa">Africa</a>
+        </div>
+
+        <div class="footer-column">
+            <h4>Company</h4>
+            <a href="/about">About Us</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy Policy</a>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>&copy; <%= new Date().getFullYear() %> Geo Politiq. All Rights Reserved.</p>
+
+        <!-- Push Notification Toggle -->
+        <div class="push-control">
+            <button type="button" id="pushToggle" class="push-toggle" onclick="togglePushNotifications()">
+                🔔 Notifications On
+            </button>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .push-control {
+        margin-top: 0.75rem;
+    }
+
+    .push-toggle {
+        background: transparent;
+        border: 1px solid var(--color-ink-muted, #666);
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: inherit;
+        transition: all 0.2s ease;
+        font-family: var(--font-sans, system-ui, sans-serif);
+    }
+
+    .push-toggle:hover {
+        background: var(--color-ink-faded, rgba(0, 0, 0, 0.05));
+    }
+
+    .push-toggle.push-enabled {
+        background: var(--color-red, #c41e3a);
+        color: white;
+        border-color: transparent;
+    }
+
+    .dark-mode .push-toggle:not(.push-enabled) {
+        border-color: var(--color-ink-muted, #666);
+    }
+
+    .dark-mode .push-toggle:hover:not(.push-enabled) {
+        background: rgba(255, 255, 255, 0.1);
+    }
+</style>

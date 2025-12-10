@@ -1,0 +1,132 @@
+<nav class="admin-nav">
+    <div class="admin-nav-brand">
+        <a href="/admin/posts">GeoPolitiq Admin</a>
+    </div>
+    <ul class="admin-nav-links">
+        <li><a href="/admin/posts"
+                class="<%= typeof activePage !== 'undefined' && activePage === 'posts' ? 'active' : '' %>">
+                📝 Posts
+            </a></li>
+        <li><a href="/admin/posts/new"
+                class="<%= typeof activePage !== 'undefined' && activePage === 'new' ? 'active' : '' %>">
+                ➕ New Post
+            </a></li>
+        <li><a href="/admin/ai" class="<%= typeof activePage !== 'undefined' && activePage === 'ai' ? 'active' : '' %>">
+                🤖 AI Generation
+            </a></li>
+    </ul>
+    <div class="admin-nav-actions">
+        <a href="/" target="_blank" class="btn-view-site">View Site →</a>
+        <a href="/admin/logout" class="btn-logout">Logout</a>
+    </div>
+</nav>
+
+<style>
+    .admin-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 0 24px;
+        height: 60px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .admin-nav-brand a {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fff;
+        text-decoration: none;
+        letter-spacing: -0.02em;
+    }
+
+    .admin-nav-links {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 8px;
+    }
+
+    .admin-nav-links a {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .admin-nav-links a:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .admin-nav-links a.active {
+        color: #fff;
+        background: #3b82f6;
+    }
+
+    .admin-nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .btn-view-site {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 0.8125rem;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view-site:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-logout {
+        color: #ef4444;
+        text-decoration: none;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        padding: 6px 12px;
+        border: 1px solid #ef4444;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-logout:hover {
+        color: #fff;
+        background: #ef4444;
+    }
+
+    @media (max-width: 768px) {
+        .admin-nav {
+            flex-wrap: wrap;
+            height: auto;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+
+        .admin-nav-links {
+            order: 3;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .admin-nav-links a {
+            padding: 6px 12px;
+            font-size: 0.8125rem;
+        }
+    }
+</style>

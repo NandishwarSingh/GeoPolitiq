@@ -1,0 +1,206 @@
+<div class="feed-container">
+    <!-- Tag Header -->
+    <header class="tag-header">
+        <h1 class="headline-lg">
+            <span class="tag-hash">#</span>
+            <%= tag %>
+        </h1>
+        <p class="tag-description">
+            All posts tagged with "<%= tag %>"
+        </p>
+    </header>
+
+    <% if (posts && posts.length> 0) { %>
+        <!-- Posts Grid -->
+        <div class="tag-grid" id="tag-grid">
+            <% posts.forEach(function(post) { %>
+                <a href="/post/<%= post.slug %>" class="tag-card">
+                    <% if (post.featuredImage) { %>
+                        <div class="tag-card-image">
+                            <img src="<%= post.featuredImage %>" alt="<%= post.imageAlt || post.title %>"
+                                loading="lazy">
+                        </div>
+                        <% } %>
+                            <div class="tag-card-content">
+                                <% if (post.topicCluster) { %>
+                                    <span class="kicker">
+                                        <%= post.topicCluster %>
+                                    </span>
+                                    <% } %>
+                                        <h2 class="tag-card-title">
+                                            <%= post.title %>
+                                        </h2>
+                                        <p class="tag-card-summary">
+                                            <%= post.tldr.substring(0, 150) %>
+                                                <%= post.tldr.length> 150 ? '...' : '' %>
+                                        </p>
+                                        <% if (post.tags && post.tags.length> 0) { %>
+                                            <div class="tag-card-tags">
+                                                <% post.tags.slice(0, 4).forEach(function(t) { %>
+                                                    <span class="feed-tag">
+                                                        <%= t %>
+                                                    </span>
+                                                    <% }); %>
+                                            </div>
+                                            <% } %>
+                            </div>
+                </a>
+                <% }); %>
+        </div>
+
+        <!-- Infinite Scroll Loading Sentinel -->
+        <div id="tag-sentinel" class="feed-sentinel" data-tag="<%= tag %>" data-page="2"
+            data-has-more="<%= hasNextPage %>">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">Loading more posts...</span>
+        </div>
+        <div id="tag-end" class="feed-end" style="display: none;">
+            <span>You've reached the end</span>
+        </div>
+        <% } else { %>
+            <!-- Empty State -->
+            <div class="empty-state">
+                <span class="empty-icon">🏷️</span>
+                <h2 class="headline-md">No posts found</h2>
+                <p>No posts have been tagged with "<%= tag %>" yet.</p>
+                <a href="/" class="btn btn-primary">Back to Home</a>
+            </div>
+            <% } %>
+</div>
+
+<style>
+    /* Infinite Scroll Styles for Tag Page */
+    .feed-sentinel {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: var(--gap-md);
+        padding: var(--gap-xl);
+        color: var(--color-ink-muted);
+    }
+
+    .feed-sentinel[data-has-more="false"] {
+        display: none;
+    }
+
+    .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--color-ink-faded);
+        border-top-color: var(--color-red);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-text {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .feed-end {
+        text-align: center;
+        padding: var(--gap-xl);
+        color: var(--color-ink-muted);
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        border-top: var(--border-hair);
+    }
+</style>
+
+<script>
+    (function () {
+        const sentinel = document.getElementById('tag-sentinel');
+        const tagEnd = document.getElementById('tag-end');
+        const tagGrid = document.getElementById('tag-grid');
+
+        if (!sentinel || !tagGrid) return;
+
+        let isLoading = false;
+        let currentPage = parseInt(sentinel.dataset.page) || 2;
+        let hasMore = sentinel.dataset.hasMore === 'true';
+        const tag = sentinel.dataset.tag;
+
+        function createPostHTML(post) {
+            const imgHtml = post.featuredImage
+                ? `<div class="tag-card-image"><img src="${post.featuredImage}" alt="${post.imageAlt || post.title}" loading="lazy"></div>`
+                : '';
+
+            const clusterHtml = post.topicCluster
+                ? `<span class="kicker">${post.topicCluster}</span>`
+                : '';
+
+            const tagsHtml = post.tags && post.tags.length > 0
+                ? `<div class="tag-card-tags">${post.tags.slice(0, 4).map(t => `<span class="feed-tag">${t}</span>`).join('')}</div>`
+                : '';
+
+            const summary = post.tldr.length > 150 ? post.tldr.substring(0, 150) + '...' : post.tldr;
+
+            return `
+            <a href="/post/${post.slug}" class="tag-card">
+                ${imgHtml}
+                <div class="tag-card-content">
+                    ${clusterHtml}
+                    <h2 class="tag-card-title">${post.title}</h2>
+                    <p class="tag-card-summary">${summary}</p>
+                    ${tagsHtml}
+                </div>
+            </a>
+        `;
+        }
+
+        async function loadMorePosts() {
+            if (isLoading || !hasMore) return;
+
+            isLoading = true;
+            sentinel.style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/tag/${encodeURIComponent(tag)}?page=${currentPage}&limit=5`);
+                const data = await response.json();
+
+                if (data.posts && data.posts.length > 0) {
+                    data.posts.forEach(post => {
+                        tagGrid.insertAdjacentHTML('beforeend', createPostHTML(post));
+                    });
+                    currentPage++;
+                    hasMore = data.hasMore;
+                    sentinel.dataset.hasMore = hasMore;
+                } else {
+                    hasMore = false;
+                }
+
+                if (!hasMore) {
+                    sentinel.style.display = 'none';
+                    tagEnd.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Intersection Observer for infinite scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && hasMore) {
+                    loadMorePosts();
+                }
+            });
+        }, { rootMargin: '200px' });
+
+        if (hasMore) {
+            observer.observe(sentinel);
+        } else {
+            sentinel.style.display = 'none';
+        }
+    })();
+</script>

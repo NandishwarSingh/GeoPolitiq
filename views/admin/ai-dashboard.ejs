@@ -1,0 +1,299 @@
+<div class="admin-page">
+    <header class="admin-header">
+        <h1>AI Content Generation</h1>
+        <a href="/admin/posts" class="btn btn-secondary">← Back to Posts</a>
+    </header>
+
+    <!-- Status Cards -->
+    <div class="ai-status-grid">
+        <div class="status-card">
+            <div class="status-icon <%= status.running ? 'status-active' : 'status-inactive' %>">
+                <%= status.running ? '✓' : '○' %>
+            </div>
+            <div class="status-info">
+                <h3>Scheduler</h3>
+                <p>
+                    <%= status.running ? 'Active' : 'Inactive' %>
+                </p>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <div class="status-value">
+                <%= todayStats.totalPostsGenerated %>
+            </div>
+            <div class="status-info">
+                <h3>Posts Today</h3>
+                <p>of <%= status.maxDailyPosts %> max</p>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <div class="status-value">
+                <%= todayStats.successfulAttempts %>
+            </div>
+            <div class="status-info">
+                <h3>Successful Runs</h3>
+                <p>Today</p>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <div class="status-value">
+                <%= Math.round(todayStats.avgProcessingTime / 1000) || 0 %>s
+            </div>
+            <div class="status-info">
+                <h3>Avg Time</h3>
+                <p>per generation</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="ai-actions">
+        <form action="/admin/ai/trigger" method="POST" class="inline-form">
+            <button type="submit" class="btn btn-primary btn-large" <%=status.isGenerating ? 'disabled' : '' %>>
+                <%= status.isGenerating ? 'Generating...' : '🚀 Generate Now' %>
+            </button>
+        </form>
+
+        <form action="/admin/ai/toggle" method="POST" class="inline-form">
+            <button type="submit" class="btn <%= status.enabled ? 'btn-danger' : 'btn-success' %>">
+                <%= status.enabled ? 'Disable Scheduler' : 'Enable Scheduler' %>
+            </button>
+        </form>
+    </div>
+
+    <% if (message) { %>
+        <div class="alert <%= message.type === 'success' ? 'alert-success' : 'alert-error' %>">
+            <%= message.text %>
+        </div>
+        <% } %>
+
+            <!-- Schedule Info -->
+            <div class="schedule-info">
+                <h3>Schedule</h3>
+                <p>Cron: <code><%= status.cronExpression %></code> (approximately every 2 hours)</p>
+                <p>Posts per run: 5 | Max daily: <%= status.maxDailyPosts %>
+                </p>
+            </div>
+
+            <!-- Recent Logs -->
+            <section class="logs-section">
+                <h2>Recent Generation Logs</h2>
+
+                <% if (logs && logs.length> 0) { %>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Model</th>
+                                <th>Status</th>
+                                <th>Posts</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% logs.forEach(function(log) { %>
+                                <tr class="<%= log.success ? '' : 'row-error' %>">
+                                    <td>
+                                        <%= new Date(log.createdAt).toLocaleString('en-US', { month: 'short' ,
+                                            day: 'numeric' , hour: '2-digit' , minute: '2-digit' }) %>
+                                    </td>
+                                    <td>
+                                        <span class="log-type log-<%= log.triggerType %>">
+                                            <%= log.triggerType %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <%= log.model.split('/').pop() %>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge <%= log.success ? 'badge-success' : 'badge-error' %>">
+                                            <%= log.success ? 'Success' : 'Failed' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <%= log.postsGenerated %>
+                                    </td>
+                                    <td>
+                                        <%= log.processingTimeMs ? (log.processingTimeMs / 1000).toFixed(1) + 's' : '-'
+                                            %>
+                                    </td>
+                                </tr>
+                                <% if (!log.success && log.errorMessage) { %>
+                                    <tr class="error-row">
+                                        <td colspan="6" class="error-message">
+                                            Error: <%= log.errorMessage %>
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                                        <% }); %>
+                        </tbody>
+                    </table>
+                    <% } else { %>
+                        <p class="empty-message">No generation logs yet. Click "Generate Now" to create content.</p>
+                        <% } %>
+            </section>
+</div>
+
+<style>
+    .ai-status-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--gap-lg);
+        margin-bottom: var(--gap-xl);
+    }
+
+    .status-card {
+        background: var(--color-paper);
+        border: var(--border-hair);
+        border-radius: 8px;
+        padding: var(--gap-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--gap-md);
+    }
+
+    .status-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .status-active {
+        background: #22c55e;
+        color: white;
+    }
+
+    .status-inactive {
+        background: #6b7280;
+        color: white;
+    }
+
+    .status-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--color-ink);
+    }
+
+    .status-info h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .status-info p {
+        font-size: 0.75rem;
+        color: var(--color-ink-muted);
+        margin: 0;
+    }
+
+    .ai-actions {
+        display: flex;
+        gap: var(--gap-md);
+        margin-bottom: var(--gap-xl);
+    }
+
+    .inline-form {
+        display: inline;
+    }
+
+    .schedule-info {
+        background: var(--color-paper-dark);
+        padding: var(--gap-lg);
+        border-radius: 8px;
+        margin-bottom: var(--gap-xl);
+    }
+
+    .schedule-info h3 {
+        margin: 0 0 var(--gap-sm);
+    }
+
+    .schedule-info p {
+        margin: var(--gap-xs) 0;
+        font-size: 0.875rem;
+    }
+
+    .schedule-info code {
+        background: var(--color-ink);
+        color: var(--color-paper);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.8125rem;
+    }
+
+    .logs-section {
+        margin-top: var(--gap-xl);
+    }
+
+    .logs-section h2 {
+        margin-bottom: var(--gap-lg);
+    }
+
+    .log-type {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 3px;
+    }
+
+    .log-scheduled {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .log-manual {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .log-seed {
+        background: #8b5cf6;
+        color: white;
+    }
+
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .badge-success {
+        background: #22c55e;
+        color: white;
+    }
+
+    .badge-error {
+        background: #ef4444;
+        color: white;
+    }
+
+    .row-error {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .error-row td {
+        padding: var(--gap-sm) var(--gap-md);
+        font-size: 0.8125rem;
+        color: #dc2626;
+    }
+
+    .empty-message {
+        color: var(--color-ink-muted);
+        font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+        .ai-status-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>

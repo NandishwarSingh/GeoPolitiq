@@ -1,0 +1,771 @@
+<%# Single Post Page - Newspaper Style %>
+
+    <article class="single-article">
+        <%# Category Badge %>
+            <% if (post.topicCluster) { %>
+                <a href="/cluster/<%= post.topicCluster %>" class="article-kicker">
+                    <%= post.topicCluster %>
+                </a>
+                <% } %>
+
+                    <%# Title %>
+                        <h1 class="article-headline">
+                            <%= post.title %>
+                        </h1>
+
+                        <%# Meta: Date & Tags %>
+                            <div class="article-meta">
+                                <time datetime="<%= post.publishTime %>">
+                                    <%= new Date(post.publishTime).toLocaleDateString('en-US', { month: 'long' ,
+                                        day: 'numeric' , year: 'numeric' }) %>
+                                </time>
+                                <% if (post.tags && post.tags.length> 0) { %>
+                                    <span class="meta-sep">•</span>
+                                    <% post.tags.slice(0, 2).forEach(function(tag, i) { %>
+                                        <a href="/tag/<%= tag %>" class="meta-tag">
+                                            <%= tag %>
+                                        </a>
+                                        <%= i < 1 && post.tags.length> 1 ? ', ' : '' %>
+                                            <% }); %>
+                                                <% } %>
+                            </div>
+
+                            <%# Featured Image %>
+                                <% if (post.featuredImage) { %>
+                                    <figure class="article-figure">
+                                        <img src="<%= post.featuredImage %>" alt="<%= post.imageAlt || post.title %>"
+                                            class="article-image">
+                                        <% if (post.imageSource) { %>
+                                            <figcaption>Image: <%= post.imageSource %>
+                                            </figcaption>
+                                            <% } %>
+                                    </figure>
+                                    <% } %>
+
+                                        <%# TLDR / Standfirst %>
+                                            <% if (post.tldr) { %>
+                                                <p class="article-standfirst">
+                                                    <%= post.tldr %>
+                                                </p>
+                                                <% } %>
+
+                                                    <%# Article Body %>
+                                                        <div class="article-body">
+                                                            <%- post.bodyHtml %>
+                                                        </div>
+
+                                                        <%# Author Section %>
+                                                            <% if (post.authorName || post.authorOrg) { %>
+                                                                <div class="author-section">
+                                                                    <div class="author-info">
+                                                                        <% if (post.authorName) { %>
+                                                                            <span class="author-name">Written by <%=
+                                                                                    post.authorName %></span>
+                                                                            <% } %>
+                                                                                <% if (post.authorOrg) { %>
+                                                                                    <span class="author-org">
+                                                                                        <%= post.authorOrg %>
+                                                                                    </span>
+                                                                                    <% } %>
+                                                                    </div>
+                                                                    <% if (post.sourceUrl) { %>
+                                                                        <a href="<%= post.sourceUrl %>" target="_blank"
+                                                                            rel="noopener" class="source-link">
+                                                                            Read Original Article →
+                                                                        </a>
+                                                                        <% } %>
+                                                                </div>
+                                                                <% } %>
+
+                                                                    <%# Tags Footer %>
+                                                                        <% if (post.tags && post.tags.length> 0) { %>
+                                                                            <footer class="article-footer">
+                                                                                <span class="tags-label">Topics:</span>
+                                                                                <% post.tags.forEach(function(tag) { %>
+                                                                                    <a href="/tag/<%= tag %>"
+                                                                                        class="tag-link">
+                                                                                        <%= tag %>
+                                                                                    </a>
+                                                                                    <% }); %>
+                                                                            </footer>
+                                                                            <% } %>
+
+                                                                                <%# Share Buttons %>
+                                                                                    <div class="share-section">
+                                                                                        <span
+                                                                                            class="share-label">Share:</span>
+                                                                                        <div class="share-buttons">
+                                                                                            <a href="https://twitter.com/intent/tweet?url=<%= encodeURIComponent('https://geopolitiq.com/post/' + post.slug) %>&text=<%= encodeURIComponent(post.title) %>"
+                                                                                                target="_blank"
+                                                                                                rel="noopener"
+                                                                                                class="share-btn share-twitter"
+                                                                                                title="Share on Twitter">
+                                                                                                𝕏
+                                                                                            </a>
+                                                                                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<%= encodeURIComponent('https://geopolitiq.com/post/' + post.slug) %>"
+                                                                                                target="_blank"
+                                                                                                rel="noopener"
+                                                                                                class="share-btn share-linkedin"
+                                                                                                title="Share on LinkedIn">
+                                                                                                in
+                                                                                            </a>
+                                                                                            <a href="https://www.facebook.com/sharer/sharer.php?u=<%= encodeURIComponent('https://geopolitiq.com/post/' + post.slug) %>"
+                                                                                                target="_blank"
+                                                                                                rel="noopener"
+                                                                                                class="share-btn share-facebook"
+                                                                                                title="Share on Facebook">
+                                                                                                f
+                                                                                            </a>
+                                                                                            <a href="https://wa.me/?text=<%= encodeURIComponent(post.title + ' - https://geopolitiq.com/post/' + post.slug) %>"
+                                                                                                target="_blank"
+                                                                                                rel="noopener"
+                                                                                                class="share-btn share-whatsapp"
+                                                                                                title="Share on WhatsApp">
+                                                                                                ✆
+                                                                                            </a>
+                                                                                            <button
+                                                                                                class="share-btn share-copy"
+                                                                                                onclick="copyLink()"
+                                                                                                title="Copy Link"
+                                                                                                id="copyBtn">Copy</button>
+                                                                                        </div>
+                                                                                        <span class="copy-toast"
+                                                                                            id="copyToast">Link
+                                                                                            copied!</span>
+                                                                                    </div>
+    </article>
+
+    <%# Related Stories %>
+        <% if (relatedPosts && relatedPosts.length> 0) { %>
+            <aside class="related-stories">
+                <h2 class="related-heading">Related Stories</h2>
+                <div class="related-list" id="related-list">
+                    <% relatedPosts.forEach(function(related) { %>
+                        <a href="/post/<%= related.slug %>" class="related-item">
+                            <% if (related.featuredImage) { %>
+                                <img src="<%= related.featuredImage %>" alt="<%= related.title %>"
+                                    class="related-thumb">
+                                <% } %>
+                                    <span class="related-title">
+                                        <%= related.title %>
+                                    </span>
+                        </a>
+                        <% }); %>
+                </div>
+
+                <!-- Infinite Scroll Sentinel for Related Posts -->
+                <div id="related-sentinel" class="related-sentinel" data-slug="<%= post.slug %>" data-page="2"
+                    data-has-more="<%= relatedPosts.length >= 10 %>">
+                    <div class="loading-spinner-sm"></div>
+                    <span>Loading more...</span>
+                </div>
+                <div id="related-end" class="related-end" style="display: none;">
+                    <span>No more related stories</span>
+                </div>
+            </aside>
+            <% } %>
+
+                <style>
+                    /* Single Article - Newspaper Style */
+                    .single-article {
+                        max-width: 720px;
+                        margin: 0 auto;
+                        padding: var(--gap-xl) var(--gap-md) var(--gap-3xl);
+                    }
+
+                    .article-kicker {
+                        display: inline-block;
+                        font-family: var(--font-sans);
+                        font-size: 0.75rem;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: 0.08em;
+                        color: var(--color-red);
+                        text-decoration: none;
+                        margin-bottom: var(--gap-sm);
+                    }
+
+                    .article-kicker:hover {
+                        text-decoration: underline;
+                    }
+
+                    .article-headline {
+                        font-family: var(--font-headline);
+                        font-size: clamp(1.75rem, 5vw, 2.5rem);
+                        font-weight: 900;
+                        line-height: 1.15;
+                        color: var(--color-ink);
+                        margin: 0 0 var(--gap-md);
+                    }
+
+                    .article-meta {
+                        display: flex;
+                        align-items: center;
+                        flex-wrap: wrap;
+                        gap: 0;
+                        font-family: var(--font-sans);
+                        font-size: 0.875rem;
+                        color: var(--color-ink-muted);
+                        margin-bottom: var(--gap-lg);
+                    }
+
+                    .meta-sep {
+                        margin: 0 0.5rem;
+                        opacity: 0.5;
+                    }
+
+                    .meta-tag {
+                        color: var(--color-red);
+                        text-decoration: none;
+                        font-weight: 500;
+                    }
+
+                    .meta-tag:hover {
+                        text-decoration: underline;
+                    }
+
+                    /* Featured Image */
+                    .article-figure {
+                        margin: 0 0 var(--gap-xl);
+                    }
+
+                    .article-image {
+                        width: 100%;
+                        height: auto;
+                        display: block;
+                        border-radius: 4px;
+                    }
+
+                    .article-figure figcaption {
+                        font-family: var(--font-sans);
+                        font-size: 0.75rem;
+                        color: var(--color-ink-faded);
+                        margin-top: var(--gap-sm);
+                        text-align: right;
+                    }
+
+                    /* Standfirst / TLDR */
+                    .article-standfirst {
+                        font-family: var(--font-body);
+                        font-size: 1.2rem;
+                        font-weight: 500;
+                        line-height: 1.5;
+                        color: var(--color-ink-light);
+                        margin: 0 0 var(--gap-xl);
+                        padding-left: var(--gap-md);
+                        border-left: 3px solid var(--color-red);
+                    }
+
+                    /* Article Body */
+                    .article-body {
+                        font-family: var(--font-body);
+                        font-size: 1.1rem;
+                        line-height: 1.8;
+                        color: var(--color-ink-light);
+                    }
+
+                    .article-body p {
+                        margin: 1.25em 0;
+                    }
+
+                    .article-body h2 {
+                        font-family: var(--font-headline);
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        color: var(--color-ink);
+                        margin: 2rem 0 1rem;
+                    }
+
+                    .article-body h3 {
+                        font-size: 1.25rem;
+                        font-weight: 700;
+                        color: var(--color-ink);
+                        margin: 1.5rem 0 0.75rem;
+                    }
+
+                    .article-body blockquote {
+                        margin: 1.5rem 0;
+                        padding-left: var(--gap-md);
+                        border-left: 3px solid var(--color-ink-faded);
+                        font-style: italic;
+                        color: var(--color-ink-muted);
+                    }
+
+                    .article-body ul,
+                    .article-body ol {
+                        padding-left: 1.25rem;
+                        margin: 1rem 0;
+                    }
+
+                    .article-body li {
+                        margin: 0.5rem 0;
+                    }
+
+                    .article-body strong {
+                        font-weight: 700;
+                        color: var(--color-ink);
+                    }
+
+                    /* Tables - Responsive */
+                    .article-body table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 1.5rem 0;
+                        font-size: 0.95rem;
+                    }
+
+                    .article-body th,
+                    .article-body td {
+                        padding: 0.75rem 1rem;
+                        text-align: left;
+                        border-bottom: 1px solid var(--border-hair);
+                    }
+
+                    .article-body th {
+                        background: var(--color-paper-dark);
+                        font-weight: 700;
+                        color: var(--color-ink);
+                        font-size: 0.8rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                    }
+
+                    .article-body tr:hover {
+                        background: rgba(0, 0, 0, 0.02);
+                    }
+
+                    /* Mobile Table - Convert to Stacked Cards */
+                    @media (max-width: 768px) {
+                        .article-body table {
+                            display: block;
+                            border: none;
+                            margin: 1.5rem 0;
+                        }
+
+                        .article-body thead {
+                            display: none;
+                        }
+
+                        .article-body tbody {
+                            display: block;
+                        }
+
+                        .article-body tr {
+                            display: block;
+                            background: var(--color-paper-dark);
+                            border-radius: 12px;
+                            padding: 1rem;
+                            margin-bottom: 1rem;
+                            border: 1px solid var(--color-ink-faded);
+                        }
+
+                        .article-body td {
+                            display: block;
+                            padding: 0.5rem 0;
+                            border: none;
+                            font-size: 0.9rem;
+                            text-align: left;
+                        }
+
+                        .article-body td:first-child {
+                            font-weight: 700;
+                            font-size: 1rem;
+                            color: var(--color-ink);
+                            padding-bottom: 0.75rem;
+                            margin-bottom: 0.5rem;
+                            border-bottom: 1px solid var(--color-ink-faded);
+                        }
+
+                        .article-body td:not(:first-child):not(:last-child) {
+                            padding: 0.4rem 0;
+                            color: var(--color-ink-muted);
+                        }
+
+                        .article-body td:last-child {
+                            padding-top: 0.5rem;
+                            padding-bottom: 0;
+                        }
+
+                        .article-body tr:last-child {
+                            margin-bottom: 0;
+                        }
+                    }
+
+                    /* Author Section */
+                    .author-section {
+                        margin-top: var(--gap-2xl);
+                        padding: var(--gap-lg);
+                        background: var(--color-paper-dark);
+                        border-radius: 8px;
+                        border-left: 3px solid var(--color-red);
+                    }
+
+                    .author-info {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.25rem;
+                    }
+
+                    .author-name {
+                        font-family: var(--font-sans);
+                        font-size: 0.95rem;
+                        font-weight: 600;
+                        color: var(--color-ink);
+                    }
+
+                    .author-org {
+                        font-family: var(--font-sans);
+                        font-size: 0.85rem;
+                        color: var(--color-ink-muted);
+                    }
+
+                    .source-link {
+                        display: inline-block;
+                        margin-top: var(--gap-sm);
+                        font-family: var(--font-sans);
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        color: var(--color-red);
+                        text-decoration: none;
+                    }
+
+                    .source-link:hover {
+                        text-decoration: underline;
+                    }
+
+                    /* Footer Tags */
+                    .article-footer {
+                        margin-top: var(--gap-2xl);
+                        padding-top: var(--gap-lg);
+                        border-top: var(--border-hair);
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        gap: var(--gap-sm);
+                    }
+
+                    .tags-label,
+                    .share-label {
+                        font-family: var(--font-sans);
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        color: var(--color-ink-muted);
+                    }
+
+                    .tag-link {
+                        font-family: var(--font-sans);
+                        font-size: 0.6875rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.08em;
+                        color: var(--color-ink-muted);
+                        background: var(--color-paper-dark);
+                        padding: var(--gap-xs) var(--gap-sm);
+                        border: 1px solid var(--color-ink-faded);
+                        text-decoration: none;
+                        transition: all 0.15s;
+                    }
+
+                    html.dark-mode .tag-link,
+                    body.dark-mode .tag-link {
+                        background: rgba(255, 255, 255, 0.1);
+                        border-color: rgba(255, 255, 255, 0.2);
+                    }
+
+                    .tag-link:hover {
+                        background: var(--color-red);
+                        color: #fff;
+                        border-color: var(--color-red);
+                    }
+
+                    /* Related Stories */
+                    .related-stories {
+                        max-width: 720px;
+                        margin: 0 auto;
+                        padding: var(--gap-xl) var(--gap-md) var(--gap-2xl);
+                        border-top: var(--border-medium);
+                    }
+
+                    .related-heading {
+                        font-family: var(--font-headline);
+                        font-size: 1.1rem;
+                        font-weight: 700;
+                        color: var(--color-ink);
+                        margin: 0 0 var(--gap-lg);
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                    }
+
+                    .related-list {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                        gap: var(--gap-md);
+                    }
+
+                    .related-item {
+                        display: flex;
+                        flex-direction: column;
+                        text-decoration: none;
+                        color: var(--color-ink);
+                        transition: transform 0.15s;
+                    }
+
+                    .related-item:hover {
+                        transform: translateY(-2px);
+                    }
+
+                    .related-thumb {
+                        width: 100%;
+                        height: 120px;
+                        object-fit: cover;
+                        border-radius: 3px;
+                        margin-bottom: var(--gap-sm);
+                    }
+
+                    .related-title {
+                        font-family: var(--font-headline);
+                        font-size: 0.9rem;
+                        font-weight: 600;
+                        line-height: 1.35;
+                    }
+
+                    .related-item:hover .related-title {
+                        color: var(--color-red);
+                    }
+
+                    /* Share Section */
+                    .share-section {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75rem;
+                        margin-top: var(--gap-lg);
+                        padding-top: var(--gap-lg);
+                        border-top: var(--border-hair);
+                        position: relative;
+                    }
+
+                    .share-buttons {
+                        display: flex;
+                        gap: 0.5rem;
+                    }
+
+                    .share-btn {
+                        width: 36px;
+                        height: 36px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 50%;
+                        text-decoration: none;
+                        font-weight: 700;
+                        font-size: 0.9rem;
+                        transition: all 0.2s;
+                        cursor: pointer;
+                        border: none;
+                        background: var(--color-paper-dark);
+                        color: var(--color-ink-muted);
+                    }
+
+                    .share-copy {
+                        width: auto;
+                        padding: 0 0.75rem;
+                        border-radius: 18px;
+                        font-size: 0.8rem;
+                    }
+
+                    .share-btn:hover {
+                        transform: scale(1.1);
+                    }
+
+                    .share-twitter:hover {
+                        background: #000;
+                        color: #fff;
+                    }
+
+                    .share-linkedin:hover {
+                        background: #0077b5;
+                        color: #fff;
+                    }
+
+                    .share-facebook:hover {
+                        background: #1877f2;
+                        color: #fff;
+                    }
+
+                    .share-whatsapp:hover {
+                        background: #25d366;
+                        color: #fff;
+                    }
+
+                    .share-copy:hover {
+                        background: var(--color-red);
+                        color: #fff;
+                    }
+
+                    .copy-toast {
+                        position: absolute;
+                        right: 0;
+                        top: -2rem;
+                        background: var(--color-ink);
+                        color: var(--color-paper);
+                        padding: 0.4rem 0.8rem;
+                        border-radius: 4px;
+                        font-size: 0.75rem;
+                        opacity: 0;
+                        transition: opacity 0.3s;
+                    }
+
+                    .copy-toast.show {
+                        opacity: 1;
+                    }
+
+                    /* Mobile Adjustments */
+                    @media (max-width: 600px) {
+                        .single-article {
+                            padding: var(--gap-md);
+                        }
+
+                        .article-headline {
+                            font-size: 1.6rem;
+                        }
+
+                        .article-standfirst {
+                            font-size: 1.05rem;
+                        }
+
+                        .article-body {
+                            font-size: 1rem;
+                        }
+
+                        .share-section {
+                            flex-wrap: wrap;
+                        }
+                    }
+                </style>
+
+                <script>
+                    function copyLink() {
+                        const url = window.location.href;
+                        navigator.clipboard.writeText(url).then(() => {
+                            const toast = document.getElementById('copyToast');
+                            toast.classList.add('show');
+                            setTimeout(() => toast.classList.remove('show'), 2000);
+                        }).catch(() => {
+                            // Fallback for older browsers
+                            const input = document.createElement('input');
+                            input.value = url;
+                            document.body.appendChild(input);
+                            input.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(input);
+                            const toast = document.getElementById('copyToast');
+                            toast.classList.add('show');
+                            setTimeout(() => toast.classList.remove('show'), 2000);
+                        });
+                    }
+
+                    // Infinite scroll for related posts
+                    (function () {
+                        const sentinel = document.getElementById('related-sentinel');
+                        const relatedEnd = document.getElementById('related-end');
+                        const relatedList = document.getElementById('related-list');
+
+                        if (!sentinel || !relatedList) return;
+
+                        let isLoading = false;
+                        let currentPage = parseInt(sentinel.dataset.page) || 2;
+                        let hasMore = sentinel.dataset.hasMore === 'true';
+                        const slug = sentinel.dataset.slug;
+
+                        function createRelatedHTML(post) {
+                            const imgHtml = post.featuredImage
+                                ? `<img src="${post.featuredImage}" alt="${post.title}" class="related-thumb">`
+                                : '';
+                            return `
+                                <a href="/post/${post.slug}" class="related-item">
+                                    ${imgHtml}
+                                    <span class="related-title">${post.title}</span>
+                                </a>
+                            `;
+                        }
+
+                        async function loadMoreRelated() {
+                            if (isLoading || !hasMore) return;
+
+                            isLoading = true;
+                            sentinel.style.display = 'flex';
+
+                            try {
+                                const response = await fetch(`/api/posts/${slug}/related?page=${currentPage}&limit=5`);
+                                const data = await response.json();
+
+                                if (data.posts && data.posts.length > 0) {
+                                    data.posts.forEach(post => {
+                                        relatedList.insertAdjacentHTML('beforeend', createRelatedHTML(post));
+                                    });
+                                    currentPage++;
+                                    hasMore = data.hasMore;
+                                } else {
+                                    hasMore = false;
+                                }
+
+                                if (!hasMore) {
+                                    sentinel.style.display = 'none';
+                                    relatedEnd.style.display = 'block';
+                                }
+                            } catch (error) {
+                                console.error('Failed to load related posts:', error);
+                            } finally {
+                                isLoading = false;
+                            }
+                        }
+
+                        // Intersection Observer
+                        const observer = new IntersectionObserver((entries) => {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting && hasMore) {
+                                    loadMoreRelated();
+                                }
+                            });
+                        }, { rootMargin: '100px' });
+
+                        if (hasMore) {
+                            observer.observe(sentinel);
+                        } else {
+                            sentinel.style.display = 'none';
+                        }
+                    })();
+                </script>
+
+                <style>
+                    /* Related Posts Infinite Scroll */
+                    .related-sentinel {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        gap: var(--gap-sm);
+                        padding: var(--gap-md);
+                        color: var(--color-ink-muted);
+                        font-size: 0.8rem;
+                    }
+
+                    .related-sentinel[data-has-more="false"] {
+                        display: none;
+                    }
+
+                    .loading-spinner-sm {
+                        width: 16px;
+                        height: 16px;
+                        border: 2px solid var(--color-ink-faded);
+                        border-top-color: var(--color-red);
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                    }
+
+                    .related-end {
+                        text-align: center;
+                        padding: var(--gap-sm);
+                        color: var(--color-ink-muted);
+                        font-size: 0.75rem;
+                    }
+                </style>

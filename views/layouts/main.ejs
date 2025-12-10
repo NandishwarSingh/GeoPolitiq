@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Critical inline styles - Render immediately without blocking -->
+    <style>
+        /* Prevent FOUC */
+        html {
+            visibility: hidden
+        }
+
+        html.loaded {
+            visibility: visible
+        }
+
+        /* Critical dark mode */
+        html.dark-mode {
+            background: #0f1419;
+            color: #e7e9ea
+        }
+
+        html:not(.dark-mode) {
+            background: #faf8f3;
+            color: #1a1a1a
+        }
+
+        /* System fonts first - zero network latency */
+        :root {
+            --font-headline: Georgia, 'Times New Roman', serif;
+            --font-body: Georgia, serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* Critical above-the-fold styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-body);
+            line-height: 1.6;
+            background: var(--color-paper, #faf8f3);
+            color: var(--color-ink, #1a1a1a)
+        }
+
+        html.dark-mode body {
+            background: #0f1419;
+            color: #e7e9ea
+        }
+
+        /* Masthead critical styles */
+        .masthead {
+            border-bottom: 3px solid currentColor;
+            padding: 1rem
+        }
+
+        .masthead-title {
+            font-family: var(--font-headline);
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            font-weight: 700;
+            text-align: center
+        }
+
+        .masthead-title a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        /* Lead story critical styles */
+        .headline-xl {
+            font-family: var(--font-headline);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 0.5rem
+        }
+
+        .headline-xl a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        .lead-image {
+            width: 100%;
+            height: auto;
+            display: block
+        }
+
+        /* Hide non-critical content until CSS loads */
+        .masthead-nav-main,
+        .lead-sidebar,
+        .news-feed,
+        .site-footer {
+            opacity: 0
+        }
+
+        html.loaded .masthead-nav-main,
+        html.loaded .lead-sidebar,
+        html.loaded .news-feed,
+        html.loaded .site-footer {
+            opacity: 1;
+            transition: opacity .2s
+        }
+    </style>
+
+    <!-- Dark Mode - Must run before any paint -->
+    <script>
+        (function () { var s = localStorage.getItem('theme'), d = window.matchMedia('(prefers-color-scheme:dark)').matches; if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark-mode') })();
+    </script>
+
+    <!-- SEO: Title -->
+    <title>
+        <%= typeof seo !=='undefined' && seo ? seo.title : title %>
+    </title>
+
+    <!-- SEO: Basic Meta -->
+    <meta name="description"
+        content="<%= typeof seo !== 'undefined' && seo ? seo.description : (typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis') %>">
+
+    <!-- Canonical URL -->
+    <% if (typeof seo !=='undefined' && seo && seo.canonicalUrl) { %>
+        <link rel="canonical" href="<%= seo.canonicalUrl %>">
+        <% } %>
+
+            <!-- Open Graph -->
+            <% if (typeof seo !=='undefined' && seo && seo.og) { %>
+                <meta property="og:title" content="<%= seo.og.title %>">
+                <meta property="og:description" content="<%= seo.og.description %>">
+                <meta property="og:image" content="<%= seo.og.image %>">
+                <meta property="og:url" content="<%= seo.og.url %>">
+                <meta property="og:type" content="<%= seo.og.type %>">
+                <meta property="og:site_name" content="<%= seo.og.siteName %>">
+                <% if (seo.og.publishedTime) { %>
+                    <meta property="article:published_time"
+                        content="<%= new Date(seo.og.publishedTime).toISOString() %>">
+                    <% } %>
+                        <% if (seo.og.modifiedTime) { %>
+                            <meta property="article:modified_time"
+                                content="<%= new Date(seo.og.modifiedTime).toISOString() %>">
+                            <% } %>
+                                <% if (seo.og.tags && seo.og.tags.length> 0) { %>
+                                    <% seo.og.tags.forEach(function(tag) { %>
+                                        <meta property="article:tag" content="<%= tag %>">
+                                        <% }); %>
+                                            <% } %>
+                                                <% } else { %>
+                                                    <meta property="og:title" content="<%= title %>">
+                                                    <meta property="og:description"
+                                                        content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis' %>">
+                                                    <meta property="og:type" content="website">
+                                                    <meta property="og:site_name" content="GeoPolitiq">
+                                                    <% } %>
+
+                                                        <!-- Twitter Card -->
+                                                        <% if (typeof seo !=='undefined' && seo && seo.twitter) { %>
+                                                            <meta name="twitter:card" content="<%= seo.twitter.card %>">
+                                                            <meta name="twitter:title"
+                                                                content="<%= seo.twitter.title %>">
+                                                            <meta name="twitter:description"
+                                                                content="<%= seo.twitter.description %>">
+                                                            <meta name="twitter:image"
+                                                                content="<%= seo.twitter.image %>">
+                                                            <% if (seo.twitter.site) { %>
+                                                                <meta name="twitter:site"
+                                                                    content="<%= seo.twitter.site %>">
+                                                                <% } %>
+                                                                    <% } else { %>
+                                                                        <meta name="twitter:card"
+                                                                            content="summary_large_image">
+                                                                        <meta name="twitter:title"
+                                                                            content="<%= title %>">
+                                                                        <meta name="twitter:description"
+                                                                            content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis' %>">
+                                                                        <% } %>
+
+                                                                            <!-- JSON-LD Structured Data -->
+                                                                            <% if (typeof seo !=='undefined' && seo &&
+                                                                                seo.jsonLd) { %>
+                                                                                <script
+                                                                                    type="application/ld+json"><%- JSON.stringify(seo.jsonLd) %></script>
+                                                                                <% } %>
+
+                                                                                    <!-- Favicon -->
+                                                                                    <link rel="icon" type="image/png"
+                                                                                        href="/favicon.png">
+
+
+                                                                                    <!-- Preload LCP image if available -->
+                                                                                    <% if (typeof featuredPost
+                                                                                        !=='undefined' && featuredPost
+                                                                                        && featuredPost.featuredImage) {
+                                                                                        %>
+                                                                                        <link rel="preload" as="image"
+                                                                                            href="<%= featuredPost.featuredImage %>"
+                                                                                            fetchpriority="high">
+                                                                                        <% } %>
+
+                                                                                            <!-- DNS prefetch -->
+                                                                                            <link rel="dns-prefetch"
+                                                                                                href="//images.unsplash.com">
+
+                                                                                            <!-- Main stylesheet - loaded async, non-blocking -->
+                                                                                            <link rel="preload"
+                                                                                                href="/css/style.css"
+                                                                                                as="style"
+                                                                                                onload="this.onload=null;this.rel='stylesheet';document.documentElement.classList.add('loaded')">
+                                                                                            <noscript>
+                                                                                                <link rel="stylesheet"
+                                                                                                    href="/css/style.css">
+                                                                                            </noscript>
+
+                                                                                            <!-- Fonts - Merriweather from Google Fonts -->
+                                                                                            <link rel="preconnect"
+                                                                                                href="https://fonts.googleapis.com">
+                                                                                            <link rel="preconnect"
+                                                                                                href="https://fonts.gstatic.com"
+                                                                                                crossorigin>
+                                                                                            <link
+                                                                                                href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700&display=swap"
+                                                                                                rel="stylesheet">
+</head>
+
+<body>
+    <%- include('../partials/header') %>
+
+        <main>
+            <%- body %>
+        </main>
+
+        <%- include('../partials/footer') %>
+
+            <!-- Load web fonts after page is interactive -->
+            <link rel="stylesheet"
+                href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lora:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap"
+                media="print" onload="this.media='all'">
+
+            <!-- JS deferred -->
+            <script src="/js/main.js" defer></script>
+
+            <!-- Ensure page visible -->
+            <script>setTimeout(function () { document.documentElement.classList.add('loaded') }, 100)</script>
+</body>
+
+</html>

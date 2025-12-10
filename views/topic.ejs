@@ -1,0 +1,92 @@
+<div class="topic-page">
+    <!-- Topic Header -->
+    <header class="topic-header">
+        <h1 class="topic-title">
+            <%= cluster %>
+        </h1>
+        <p class="topic-description">
+            All analysis and news related to <strong>
+                <%= cluster %>
+            </strong>
+        </p>
+    </header>
+
+    <!-- Posts Grid -->
+    <% if (posts && posts.length> 0) { %>
+        <section class="posts-section" aria-label="Topic Articles">
+            <div class="posts-grid">
+                <% posts.forEach(function(post) { %>
+                    <article class="post-card">
+                        <a href="/post/<%= post.slug %>" class="post-card-link">
+                            <div class="post-card-content">
+                                <h2 class="post-card-title">
+                                    <%= post.title %>
+                                </h2>
+                                <p class="post-card-tldr">
+                                    <%= post.tldr %>
+                                </p>
+
+                                <div class="post-card-meta">
+                                    <div class="post-card-tags">
+                                        <% if (post.tags && post.tags.length> 0) { %>
+                                            <% post.tags.slice(0, 3).forEach(function(tag) { %>
+                                                <span class="tag">
+                                                    <%= tag %>
+                                                </span>
+                                                <% }); %>
+                                                    <% } %>
+                                    </div>
+                                    <time class="post-card-time"
+                                        datetime="<%= post.publishTime ? post.publishTime.toISOString() : '' %>">
+                                        <% if (post.publishTime) { %>
+                                            <%= new Date(post.publishTime).toLocaleDateString('en-US', { month: 'short'
+                                                , day: 'numeric' , year: 'numeric' }) %>
+                                                <% } %>
+                                    </time>
+                                </div>
+                            </div>
+                        </a>
+                    </article>
+                    <% }); %>
+            </div>
+
+            <!-- Pagination -->
+            <% if (totalPages> 1) { %>
+                <nav class="pagination" aria-label="Topic pagination">
+                    <% if (hasPrevPage) { %>
+                        <a href="/topic/<%= encodeURIComponent(cluster) %>?page=<%= currentPage - 1 %>"
+                            class="pagination-btn pagination-prev" rel="prev">
+                            ← Previous
+                        </a>
+                        <% } %>
+
+                            <span class="pagination-info">
+                                Page <strong>
+                                    <%= currentPage %>
+                                </strong> of <strong>
+                                    <%= totalPages %>
+                                </strong>
+                            </span>
+
+                            <% if (hasNextPage) { %>
+                                <a href="/topic/<%= encodeURIComponent(cluster) %>?page=<%= currentPage + 1 %>"
+                                    class="pagination-btn pagination-next" rel="next">
+                                    Next →
+                                </a>
+                                <% } %>
+                </nav>
+                <% } %>
+        </section>
+
+        <% } else { %>
+            <!-- Empty State -->
+            <section class="empty-state">
+                <div class="empty-content">
+                    <span class="empty-icon" aria-hidden="true">📚</span>
+                    <h2>No articles found</h2>
+                    <p>No articles have been published about "<%= cluster %>" yet.</p>
+                    <a href="/" class="btn btn-primary">← Back to Home</a>
+                </div>
+            </section>
+            <% } %>
+</div>

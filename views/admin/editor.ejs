@@ -1,0 +1,87 @@
+<div class="admin-editor">
+    <header class="editor-header">
+        <h1>
+            <%= isEdit ? 'Edit Post' : 'New Post' %>
+        </h1>
+        <a href="/admin/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+    </header>
+
+    <% if (typeof error !=='undefined' && error) { %>
+        <div class="alert alert-error">
+            <%= error %>
+        </div>
+        <% } %>
+
+            <form action="<%= isEdit ? '/admin/posts/' + post._id + '?_method=PUT' : '/admin/posts' %>" method="POST"
+                class="editor-form">
+                <div class="form-row">
+                    <div class="form-group form-group-large">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" name="title" required maxlength="200"
+                            placeholder="Enter post title" class="form-input" value="<%= post ? post.title : '' %>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" class="form-select">
+                            <option value="draft" <%=post && post.status==='draft' ? 'selected' : '' %>>Draft</option>
+                            <option value="published" <%=post && post.status==='published' ? 'selected' : '' %>
+                                >Published</option>
+                        </select>
+                    </div>
+                </div>
+
+                <% if (isEdit) { %>
+                    <div class="form-group">
+                        <label for="slug">Slug</label>
+                        <input type="text" id="slug" name="slug" required placeholder="url-friendly-slug"
+                            class="form-input" value="<%= post ? post.slug : '' %>">
+                        <small class="form-hint">URL-friendly identifier. Only change if necessary.</small>
+                    </div>
+                    <% } %>
+
+                        <div class="form-group">
+                            <label for="tldr">TL;DR Summary * <span class="char-count"><span
+                                        id="tldr-count">0</span>/500</span></label>
+                            <textarea id="tldr" name="tldr" required maxlength="500" rows="3"
+                                placeholder="Write a brief summary (2-3 sentences)"
+                                class="form-textarea"><%= post ? post.tldr : '' %></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="body">Body Content * (Markdown supported)</label>
+                            <textarea id="body" name="body" required rows="20" placeholder="Write your post content here. Markdown is supported.
+
+## Example Heading
+
+Write your analysis with **bold** and *italic* text.
+
+- Bullet points
+- For key points
+
+> Blockquotes for important quotes" class="form-textarea form-textarea-code"><%= post ? post.body : '' %></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tags">Tags (comma-separated)</label>
+                            <input type="text" id="tags" name="tags" placeholder="china, trade, analysis, breaking"
+                                class="form-input" value="<%= post && post.tags ? post.tags.join(', ') : '' %>">
+                            <small class="form-hint">Separate tags with commas</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sources">Sources (JSON format)</label>
+                            <textarea id="sources" name="sources" rows="4"
+                                placeholder='[{"title": "Source Name", "url": "https://example.com"}]'
+                                class="form-textarea form-textarea-code"><%= post && post.sources && post.sources.length > 0 ? JSON.stringify(post.sources, null, 2) : '' %></textarea>
+                            <small class="form-hint">Optional. Add sources in JSON array format.</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <%= isEdit ? 'Update Post' : 'Create Post' %>
+                            </button>
+                            <a href="/admin/dashboard" class="btn btn-secondary btn-large">Cancel</a>
+                        </div>
+            </form>
+</div>

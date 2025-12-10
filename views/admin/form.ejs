@@ -1,0 +1,334 @@
+<div class="admin-form-page">
+    <!-- Header -->
+    <header class="admin-header">
+        <h1>
+            <%= isEdit ? 'Edit Post' : 'New Post' %>
+        </h1>
+        <a href="/admin/posts" class="btn btn-secondary">← Back to Posts</a>
+    </header>
+
+    <!-- Error Message -->
+    <% if (error) { %>
+        <div class="alert alert-error">
+            <%= error %>
+        </div>
+        <% } %>
+
+            <!-- Post Form -->
+            <form action="<%= isEdit ? '/admin/posts/' + post._id : '/admin/posts' %>" method="POST" class="post-form"
+                enctype="multipart/form-data">
+
+                <!-- Title -->
+                <div class="form-group">
+                    <label for="title">Title <span class="required">*</span></label>
+                    <input type="text" id="title" name="title" required maxlength="300" placeholder="Enter post title"
+                        class="form-input" value="<%= post ? post.title : '' %>">
+                </div>
+
+                <!-- Slug -->
+                <div class="form-group">
+                    <label for="slug">Slug <% if (!isEdit) { %><span class="hint">(auto-generated if empty)</span>
+                            <% } %></label>
+                    <input type="text" id="slug" name="slug" placeholder="url-friendly-slug" class="form-input"
+                        value="<%= post ? post.slug : '' %>" <% if (isEdit) { %>required<% } %>>
+                        <small class="form-hint">URL-friendly identifier. Use lowercase letters, numbers, and hyphens
+                            only.</small>
+                </div>
+
+                <!-- TL;DR -->
+                <div class="form-group">
+                    <label for="tldr">TL;DR Summary <span class="required">*</span> <span class="char-count">(<span
+                                id="tldr-count">0</span>/500)</span></label>
+                    <textarea id="tldr" name="tldr" required maxlength="500" rows="3"
+                        placeholder="Brief 2-3 sentence summary"
+                        class="form-textarea"><%= post ? post.tldr : '' %></textarea>
+                </div>
+
+                <!-- Featured Image Section -->
+                <div class="form-group image-upload-section">
+                    <label>Featured Image</label>
+
+                    <% if (isEdit && post && post.featuredImage) { %>
+                        <div class="current-image">
+                            <img src="<%= post.featuredImage %>" alt="<%= post.imageAlt || post.title %>"
+                                class="image-preview">
+                            <div class="image-actions">
+                                <label class="remove-image-label">
+                                    <input type="checkbox" name="removeImage" value="true"> Remove current image
+                                </label>
+                            </div>
+                        </div>
+                        <% } %>
+
+                            <div class="image-upload-options">
+                                <div class="upload-option">
+                                    <label for="featuredImage" class="upload-label">
+                                        📁 Upload Image
+                                    </label>
+                                    <input type="file" id="featuredImage" name="featuredImage" accept="image/*"
+                                        class="form-file-input">
+                                    <small class="form-hint">Max 5MB. Supported: JPG, PNG, GIF, WebP</small>
+                                </div>
+
+                                <div class="upload-divider">or</div>
+
+                                <div class="url-option">
+                                    <input type="url" id="featuredImageUrl" name="featuredImageUrl"
+                                        placeholder="https://images.unsplash.com/..." class="form-input"
+                                        value="<%= (isEdit && post.featuredImage && !post.featuredImage.startsWith('/uploads/')) ? post.featuredImage : '' %>">
+                                    <small class="form-hint">Paste an external image URL (e.g., Unsplash)</small>
+                                </div>
+                            </div>
+                </div>
+
+                <!-- Image Alt Text (SEO) -->
+                <div class="form-group">
+                    <label for="imageAlt">Image Alt Text (SEO) <span class="seo-badge">SEO</span></label>
+                    <input type="text" id="imageAlt" name="imageAlt"
+                        placeholder="Descriptive text for the image (e.g., 'US and China flags side by side')"
+                        class="form-input" maxlength="200" value="<%= post && post.imageAlt ? post.imageAlt : '' %>">
+                    <small class="form-hint">Describe the image for screen readers and search engines. Defaults to title
+                        if empty.</small>
+                </div>
+
+                <!-- Raw Content (Markdown) -->
+                <div class="form-group">
+                    <label for="rawContent">Content (Markdown) <span class="required">*</span></label>
+                    <textarea id="rawContent" name="rawContent" required rows="20" placeholder="Write your post content in Markdown format...
+
+## Example Heading
+
+Write your analysis with **bold** and *italic* text.
+
+- Bullet points for key facts
+- Another important point
+
+> Blockquote for important quotes
+
+[Link text](https://example.com)"
+                        class="form-textarea form-textarea-code"><%= post ? post.rawContent : '' %></textarea>
+                    <small class="form-hint">Supports Markdown. Will be converted to HTML on save.</small>
+                </div>
+
+                <!-- Two Column Row -->
+                <div class="form-row">
+                    <!-- Tags -->
+                    <div class="form-group">
+                        <label for="tags">Tags</label>
+                        <input type="text" id="tags" name="tags" placeholder="china, trade, breaking, analysis"
+                            class="form-input"
+                            value="<%= post && post.tagsString ? post.tagsString : (post && post.tags ? post.tags.join(', ') : '') %>">
+                        <small class="form-hint">Comma-separated, lowercase</small>
+                    </div>
+
+                    <!-- Topic Cluster -->
+                    <div class="form-group">
+                        <label for="topicCluster">Topic Cluster</label>
+                        <input type="text" id="topicCluster" name="topicCluster" placeholder="e.g., US-China Relations"
+                            class="form-input" value="<%= post ? post.topicCluster : '' %>">
+                        <small class="form-hint">Group related posts together</small>
+                    </div>
+                </div>
+
+                <!-- Two Column Row -->
+                <div class="form-row">
+                    <!-- Publish Time -->
+                    <div class="form-group">
+                        <label for="publishTime">Publish Time</label>
+                        <input type="datetime-local" id="publishTime" name="publishTime" class="form-input"
+                            value="<%= post && post.publishTimeFormatted ? post.publishTimeFormatted : '' %>">
+                        <small class="form-hint">Leave empty to set automatically when published</small>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label for="status">Status <span class="required">*</span></label>
+                        <select id="status" name="status" class="form-select" required>
+                            <option value="draft" <%=post && post.status==='draft' ? 'selected' : (!post ? 'selected'
+                                : '' ) %>>
+                                Draft
+                            </option>
+                            <option value="published" <%=post && post.status==='published' ? 'selected' : '' %>>
+                                Published
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Source URL -->
+                <div class="form-group">
+                    <label for="sourceUrl">Source URL</label>
+                    <input type="url" id="sourceUrl" name="sourceUrl" placeholder="https://example.com/original-source"
+                        class="form-input" value="<%= post ? post.sourceUrl : '' %>">
+                    <small class="form-hint">Optional. Link to original source for reference.</small>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <%= isEdit ? 'Update Post' : 'Create Post' %>
+                    </button>
+                    <a href="/admin/posts" class="btn btn-secondary btn-large">Cancel</a>
+
+                    <% if (isEdit) { %>
+                        <a href="/post/<%= post.slug %>" target="_blank" class="btn btn-outline btn-large">
+                            View Post ↗
+                        </a>
+                        <% } %>
+                </div>
+            </form>
+</div>
+
+<style>
+    /* Image Upload Styles */
+    .image-upload-section {
+        background: var(--color-paper-dark, #f5f2ea);
+        padding: var(--gap-lg);
+        border-radius: 8px;
+        border: 2px dashed var(--border-color, #ddd);
+    }
+
+    html.dark-mode .image-upload-section,
+    body.dark-mode .image-upload-section {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .current-image {
+        margin-bottom: var(--gap-lg);
+        padding-bottom: var(--gap-lg);
+        border-bottom: 1px solid var(--border-color, #ddd);
+    }
+
+    .image-preview {
+        max-width: 300px;
+        max-height: 200px;
+        object-fit: cover;
+        border-radius: 6px;
+        display: block;
+        margin-bottom: var(--gap-sm);
+    }
+
+    .image-actions {
+        margin-top: var(--gap-sm);
+    }
+
+    .remove-image-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        color: var(--color-red, #c41e3a);
+        font-size: 0.875rem;
+    }
+
+    .image-upload-options {
+        display: flex;
+        align-items: center;
+        gap: var(--gap-lg);
+        flex-wrap: wrap;
+    }
+
+    .upload-option {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .url-option {
+        flex: 2;
+        min-width: 300px;
+    }
+
+    .upload-divider {
+        color: var(--color-ink-faded, #999);
+        font-style: italic;
+        padding: 0 var(--gap-sm);
+    }
+
+    .upload-label {
+        display: inline-block;
+        padding: var(--gap-sm) var(--gap-md);
+        background: var(--color-ink, #1a1a1a);
+        color: var(--color-paper, #faf8f3);
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+
+    .upload-label:hover {
+        opacity: 0.85;
+    }
+
+    .form-file-input {
+        display: block;
+        margin-top: var(--gap-sm);
+        font-size: 0.875rem;
+    }
+
+    .seo-badge {
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        background: #22c55e;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+    }
+
+    @media (max-width: 768px) {
+        .image-upload-options {
+            flex-direction: column;
+        }
+
+        .upload-option,
+        .url-option {
+            width: 100%;
+            min-width: auto;
+        }
+
+        .upload-divider {
+            padding: var(--gap-sm) 0;
+        }
+    }
+</style>
+
+<script>
+    // TL;DR character counter
+    document.addEventListener('DOMContentLoaded', function () {
+        const tldr = document.getElementById('tldr');
+        const counter = document.getElementById('tldr-count');
+
+        function updateCount() {
+            counter.textContent = tldr.value.length;
+        }
+
+        tldr.addEventListener('input', updateCount);
+        updateCount();
+
+        // File upload preview
+        const fileInput = document.getElementById('featuredImage');
+        if (fileInput) {
+            fileInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Clear URL input when file is selected
+                    document.getElementById('featuredImageUrl').value = '';
+                }
+            });
+        }
+
+        // Clear file when URL is entered
+        const urlInput = document.getElementById('featuredImageUrl');
+        if (urlInput) {
+            urlInput.addEventListener('input', function (e) {
+                if (e.target.value) {
+                    const fileInput = document.getElementById('featuredImage');
+                    if (fileInput) fileInput.value = '';
+                }
+            });
+        }
+    });
+</script>

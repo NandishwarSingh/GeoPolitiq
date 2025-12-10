@@ -1,0 +1,257 @@
+<div class="admin-posts">
+    <!-- Header -->
+    <header class="admin-header">
+        <h1>Manage Posts</h1>
+        <div class="header-actions">
+            <a href="/admin/posts/new" class="btn btn-primary">+ New Post</a>
+        </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="admin-search-bar">
+        <form action="/admin/posts" method="GET" class="search-form">
+            <input type="text" name="search" placeholder="Search by title, topic, or tag..." value="<%= searchQuery %>"
+                class="search-input">
+            <button type="submit" class="btn btn-secondary">Search</button>
+            <% if (searchQuery) { %>
+                <a href="/admin/posts" class="btn btn-ghost">Clear</a>
+                <% } %>
+        </form>
+        <div class="search-stats">
+            <span>
+                <%= totalPosts %> total posts
+            </span>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <% if (success) { %>
+        <div class="alert alert-success">
+            <%= success %>
+        </div>
+        <% } %>
+            <% if (error) { %>
+                <div class="alert alert-error">
+                    <%= error %>
+                </div>
+                <% } %>
+
+                    <!-- Posts Table -->
+                    <% if (posts && posts.length> 0) { %>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Topic</th>
+                                        <th>Status</th>
+                                        <th>Published</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% posts.forEach(function(post) { %>
+                                        <tr>
+                                            <td class="cell-title">
+                                                <a href="/post/<%= post.slug %>" target="_blank" class="post-link">
+                                                    <%= post.title.length> 60 ? post.title.substring(0, 60) + '...' :
+                                                        post.title %>
+                                                        <span class="external-icon">↗</span>
+                                                </a>
+                                            </td>
+                                            <td class="cell-cluster">
+                                                <% if (post.topicCluster) { %>
+                                                    <span class="tag tag-cluster">
+                                                        <%= post.topicCluster %>
+                                                    </span>
+                                                    <% } else { %>
+                                                        <span class="text-muted">—</span>
+                                                        <% } %>
+                                            </td>
+                                            <td class="cell-status">
+                                                <span class="status-badge status-<%= post.status %>">
+                                                    <%= post.status %>
+                                                </span>
+                                            </td>
+                                            <td class="cell-date">
+                                                <% if (post.publishTime) { %>
+                                                    <%= new Date(post.publishTime).toLocaleDateString('en-US', {
+                                                        month: 'short' , day: 'numeric' }) %>
+                                                        <% } else { %>
+                                                            <span class="text-muted">—</span>
+                                                            <% } %>
+                                            </td>
+                                            <td class="cell-actions">
+                                                <a href="/admin/posts/<%= post._id %>/edit"
+                                                    class="btn btn-small btn-secondary">Edit</a>
+                                                <form action="/admin/posts/<%= post._id %>/delete" method="POST"
+                                                    class="inline-form" onsubmit="return confirm('Delete this post?')">
+                                                    <button type="submit"
+                                                        class="btn btn-small btn-danger">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <% if (totalPages> 1) { %>
+                            <nav class="admin-pagination">
+                                <% if (hasPrevPage) { %>
+                                    <a href="/admin/posts?page=<%= currentPage - 1 %><%= searchQuery ? '&search=' + searchQuery : '' %>"
+                                        class="pagination-btn">← Previous</a>
+                                    <% } %>
+
+                                        <div class="pagination-info">
+                                            Page <strong>
+                                                <%= currentPage %>
+                                            </strong> of <strong>
+                                                <%= totalPages %>
+                                            </strong>
+                                        </div>
+
+                                        <% if (hasNextPage) { %>
+                                            <a href="/admin/posts?page=<%= currentPage + 1 %><%= searchQuery ? '&search=' + searchQuery : '' %>"
+                                                class="pagination-btn">Next →</a>
+                                            <% } %>
+                            </nav>
+                            <% } %>
+
+                                <!-- Post Count -->
+                                <p class="post-count">
+                                    Showing <strong>
+                                        <%= posts.length %>
+                                    </strong> of <strong>
+                                        <%= totalPosts %>
+                                    </strong> posts
+                                    <% if (searchQuery) { %>
+                                        for "<%= searchQuery %>"
+                                            <% } %>
+                                </p>
+
+                                <% } else { %>
+                                    <!-- Empty State -->
+                                    <div class="empty-state">
+                                        <div class="empty-content">
+                                            <span class="empty-icon">📝</span>
+                                            <% if (searchQuery) { %>
+                                                <h2>No posts found</h2>
+                                                <p>No posts match "<%= searchQuery %>"</p>
+                                                <a href="/admin/posts" class="btn btn-primary">Clear Search</a>
+                                                <% } else { %>
+                                                    <h2>No posts yet</h2>
+                                                    <p>Create your first post to get started.</p>
+                                                    <a href="/admin/posts/new" class="btn btn-primary">Create First
+                                                        Post</a>
+                                                    <% } %>
+                                        </div>
+                                    </div>
+                                    <% } %>
+</div>
+
+<style>
+    /* Admin Search Bar */
+    .admin-search-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: var(--admin-card-bg, #1e1e2e);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .search-form {
+        display: flex;
+        gap: 8px;
+        flex: 1;
+        max-width: 500px;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.2);
+        color: #fff;
+        font-size: 0.875rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .search-stats {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.8125rem;
+    }
+
+    /* Pagination */
+    .admin-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .pagination-btn {
+        padding: 8px 16px;
+        background: #3b82f6;
+        color: #fff;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+
+    .pagination-btn:hover {
+        background: #2563eb;
+    }
+
+    .pagination-info {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.875rem;
+    }
+
+    /* Ghost button */
+    .btn-ghost {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-ghost:hover {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Alert error */
+    .alert-error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid #ef4444;
+        color: #ef4444;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .admin-search-bar {
+            flex-direction: column;
+        }
+
+        .search-form {
+            width: 100%;
+            max-width: none;
+        }
+    }
+</style>

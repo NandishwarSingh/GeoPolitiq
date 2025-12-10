@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>
+        <%= title %>
+    </title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Admin Styles -->
+    <link rel="stylesheet" href="/css/admin.css">
+
+    <style>
+        /* Enhanced Admin Navigation */
+        .admin-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 0 24px;
+            height: 60px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-nav-brand a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .admin-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .admin-nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-nav-links a:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-nav-links a.active {
+            color: #fff;
+            background: #3b82f6;
+        }
+
+        .admin-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-view-site {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view-site:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-logout {
+            color: #ef4444 !important;
+            border: 1px solid #ef4444;
+            border-radius: 4px;
+            padding: 6px 12px !important;
+            background: transparent !important;
+        }
+
+        .btn-logout:hover {
+            color: #fff !important;
+            background: #ef4444 !important;
+        }
+
+        @media (max-width: 768px) {
+            .admin-nav {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 12px 16px;
+                gap: 12px;
+            }
+
+            .admin-nav-links {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .admin-nav-links a {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="admin-body">
+    <nav class="admin-nav">
+        <div class="admin-nav-brand">
+            <a href="/admin/posts">
+                🌐 Geo Politiq
+            </a>
+        </div>
+        <div class="admin-nav-links">
+            <a href="/admin/posts"
+                class="<%= typeof activePage !== 'undefined' && activePage === 'posts' ? 'active' : '' %>">
+                📝 Posts
+            </a>
+            <a href="/admin/posts/new"
+                class="<%= typeof activePage !== 'undefined' && activePage === 'new' ? 'active' : '' %>">
+                ➕ New
+            </a>
+            <a href="/admin/ai" class="<%= typeof activePage !== 'undefined' && activePage === 'ai' ? 'active' : '' %>">
+                🤖 AI Gen
+            </a>
+            <a href="/admin/analytics"
+                class="<%= typeof activePage !== 'undefined' && activePage === 'analytics' ? 'active' : '' %>">
+                📊 Analytics
+            </a>
+            <a href="/admin/settings"
+                class="<%= typeof activePage !== 'undefined' && activePage === 'settings' ? 'active' : '' %>">
+                ⚙️ Settings
+            </a>
+        </div>
+        <div class="admin-nav-actions">
+            <a href="/" target="_blank" class="btn-view-site">View Site →</a>
+            <a href="/admin/logout" class="btn-logout">Logout</a>
+        </div>
+    </nav>
+
+    <main class="admin-main">
+        <%- body %>
+    </main>
+
+    <script src="/js/admin.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,355 @@
+<main class="main-content tags-page">
+    <section class="tags-header">
+        <div class="tags-header-content">
+            <h1 class="tags-title">Topic Index</h1>
+            <p class="tags-subtitle">Explore our archive of <%= totalTags %> geopolitical topics</p>
+        </div>
+
+        <!-- Search Tags -->
+        <form class="tags-search" action="/tags" method="GET">
+            <input type="text" name="q" placeholder="Find a topic..." value="<%= searchQuery %>"
+                class="tags-search-input">
+            <button type="submit" class="tags-search-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </button>
+            <% if (searchQuery) { %>
+                <a href="/tags" class="tags-clear-btn">×</a>
+                <% } %>
+        </form>
+    </section>
+
+    <% if (tags && tags.length> 0) { %>
+
+        <%# Separate Trending (Top 6) from the rest %>
+            <% const sortedTags=tags.sort((a, b)=> b.count - a.count);
+                const trendingTags = sortedTags.slice(0, 6);
+                const otherTags = sortedTags.slice(6);
+                %>
+
+                <% if (!searchQuery && trendingTags.length> 0) { %>
+                    <!-- Trending Section -->
+                    <section class="tags-section">
+                        <div class="section-label">Trending Now</div>
+                        <div class="trending-grid">
+                            <% trendingTags.forEach(function(tag, index) { %>
+                                <a href="/tag/<%= tag.name %>" class="topic-card featured-topic">
+                                    <div class="topic-rank">#<%= index + 1 %>
+                                    </div>
+                                    <h3 class="topic-name">
+                                        <%= tag.name %>
+                                    </h3>
+                                    <div class="topic-meta">
+                                        <span class="topic-count">
+                                            <%= tag.count %> stories
+                                        </span>
+                                        <span class="topic-arrow">→</span>
+                                    </div>
+                                </a>
+                                <% }); %>
+                        </div>
+                    </section>
+                    <% } %>
+
+                        <!-- All Topics Grid -->
+                        <section class="tags-section">
+                            <div class="section-label">
+                                <%= searchQuery ? 'Search Results' : 'All Topics' %>
+                            </div>
+                            <div class="topics-grid">
+                                <% (searchQuery ? tags : otherTags).forEach(function(tag) { %>
+                                    <a href="/tag/<%= tag.name %>" class="topic-card">
+                                        <h3 class="topic-name">
+                                            <%= tag.name %>
+                                        </h3>
+                                        <span class="topic-count">
+                                            <%= tag.count %>
+                                        </span>
+                                    </a>
+                                    <% }); %>
+                            </div>
+                        </section>
+
+                        <% } else { %>
+                            <div class="no-results">
+                                <p>No topics found matching "<%= searchQuery %>"</p>
+                                <a href="/tags" class="back-link">View all topics</a>
+                            </div>
+                            <% } %>
+</main>
+
+<style>
+    /* Tags Page Styles */
+    .tags-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--gap-xl) var(--gap-md) var(--gap-3xl);
+    }
+
+    /* Header */
+    .tags-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: var(--gap-3xl);
+        padding-bottom: var(--gap-xl);
+        border-bottom: var(--border-medium);
+    }
+
+    .tags-title {
+        font-family: var(--font-headline);
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        font-weight: 900;
+        margin: 0 0 var(--gap-xs);
+        color: var(--color-ink);
+        letter-spacing: -0.02em;
+    }
+
+    .tags-subtitle {
+        font-family: var(--font-body);
+        font-size: 1.1rem;
+        color: var(--color-ink-muted);
+        margin: 0 0 var(--gap-xl);
+        font-style: italic;
+    }
+
+    /* Search */
+    .tags-search {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        display: flex;
+        align-items: center;
+    }
+
+    .tags-search-input {
+        width: 100%;
+        padding: 1rem 3rem 1rem 1.5rem;
+        font-size: 1.1rem;
+        font-family: var(--font-sans);
+        border: 2px solid var(--color-ink-faded);
+        background: var(--color-paper);
+        color: var(--color-ink);
+        border-radius: 0;
+        /* Sharp corners for newspaper feel */
+        transition: all 0.2s;
+    }
+
+    .tags-search-input:focus {
+        outline: none;
+        border-color: var(--color-ink);
+        background: #fff;
+    }
+
+    .tags-search-btn {
+        position: absolute;
+        right: 0.5rem;
+        background: none;
+        border: none;
+        color: var(--color-ink-muted);
+        cursor: pointer;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .tags-clear-btn {
+        position: absolute;
+        right: 3rem;
+        color: var(--color-ink-muted);
+        text-decoration: none;
+        font-size: 1.5rem;
+        line-height: 1;
+        padding: 0.5rem;
+    }
+
+    /* Sections */
+    .tags-section {
+        margin-bottom: var(--gap-3xl);
+    }
+
+    .section-label {
+        font-family: var(--font-sans);
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-red);
+        margin-bottom: var(--gap-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--gap-sm);
+    }
+
+    .section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--color-ink-faded);
+        opacity: 0.3;
+    }
+
+    /* Trending Grid */
+    .trending-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--gap-md);
+    }
+
+    /* Topics Grid - Redesigned */
+    .topics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: var(--gap-sm);
+        background: transparent;
+        border: none;
+    }
+
+    /* Topic Card */
+    .topic-card {
+        background: var(--color-paper);
+        padding: var(--gap-md) var(--gap-lg);
+        text-decoration: none;
+        color: var(--color-ink);
+        border: 1px solid var(--color-ink-faded);
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 80px;
+    }
+
+    .topic-card:hover {
+        background: var(--color-ink);
+        color: var(--color-paper);
+        border-color: var(--color-ink);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .topic-name {
+        font-family: var(--font-headline);
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 var(--gap-xs);
+        line-height: 1.2;
+        text-transform: capitalize;
+        color: inherit;
+    }
+
+    .topic-count {
+        font-family: var(--font-sans);
+        font-size: 0.8rem;
+        color: var(--color-ink-muted);
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+
+    .topic-card:hover .topic-count {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Featured Topic Styles */
+    .featured-topic {
+        border: 1px solid var(--color-ink);
+        padding: var(--gap-xl);
+        min-height: 160px;
+        justify-content: space-between;
+    }
+
+    .featured-topic .topic-name {
+        font-size: 1.75rem;
+        margin-bottom: var(--gap-md);
+    }
+
+    .featured-topic .topic-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+    }
+
+    .topic-rank {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--color-red);
+        margin-bottom: var(--gap-sm);
+        opacity: 0.8;
+    }
+
+    .topic-arrow {
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: all 0.2s;
+    }
+
+    .featured-topic:hover .topic-arrow {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* Dark Mode */
+    html.dark-mode .tags-search-input {
+        background: var(--color-paper-dark);
+        border-color: var(--color-ink-light);
+    }
+
+    html.dark-mode .tags-search-input:focus {
+        background: #000;
+        border-color: var(--color-ink);
+    }
+
+    html.dark-mode .topic-card {
+        background: var(--color-paper-dark);
+        border-color: var(--color-ink-faded);
+    }
+
+    /* Dark Mode Hover - High Contrast Fix */
+    html.dark-mode .topic-card:hover {
+        background: #fff !important;
+        /* Force white background */
+        color: #000 !important;
+        /* Force black text */
+        border-color: #fff;
+    }
+
+    html.dark-mode .topic-card:hover .topic-name {
+        color: #000 !important;
+    }
+
+    html.dark-mode .topic-card:hover .topic-count {
+        color: rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark-mode .topic-card:hover .topic-rank {
+        color: #c41e3a !important;
+        /* Keep red accent */
+    }
+
+    html.dark-mode .featured-topic {
+        border-color: var(--color-ink-light);
+    }
+
+    @media (max-width: 768px) {
+        .tags-title {
+            font-size: 2.5rem;
+        }
+
+        .trending-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .topics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .featured-topic .topic-name {
+            font-size: 1.5rem;
+        }
+    }
+</style>
