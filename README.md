@@ -1,66 +1,153 @@
-# GeoPolitiq
+# GeoPolitiq 🌍
 
-A geopolitics intelligence platform combining Wikipedia's authoritative content style with Google News' dynamic feed presentation.
+A geopolitics intelligence platform combining Wikipedia's authoritative content style with Google News' dynamic feed presentation. Features AI-powered content generation, push notifications, and a newspaper-inspired design.
 
-## 🌐 Features
+## ✨ Features (What We Have)
 
-- **Global Feed**: Latest geopolitical analysis at a glance
-- **Post Pages**: In-depth articles with TL;DR summaries, sources, and related content
-- **Tag Filtering**: Browse posts by topic, region, or theme
-- **Admin Panel**: Simple password-protected dashboard for content management
-- **Markdown Support**: Write content in Markdown, rendered as HTML
-- **Responsive Design**: Works on desktop, tablet, and mobile
+### 🤖 AI Content Generation
+- **Automated News Generation** - AI generates 5 posts per batch covering USA, India, UK, EU, and Global news
+- **Perplexity Sonar Pro Integration** - Real-time web search for today's news via OpenRouter API
+- **Scheduled Generation** - Configurable cron-based scheduler (e.g., every 2 hours)
+- **Manual Seeding** - `node scripts/aiSeed.js` for on-demand content generation
+- **News Verification** - Posts are verified for authenticity before publishing
+- **Smart Image Search** - Automatically finds relevant images for each article
+
+### 🔔 Push Notifications
+- **Web Push API** - Browser notifications when new content is published
+- **Country-Based Targeting** - Users receive notifications based on their preferred regions (USA, India, UK, EU, Global)
+- **Auto-Subscribe** - Prompts users after 5 seconds on first visit
+- **Footer Toggle** - Easy on/off toggle in the footer
+
+### 🏷️ Tag System
+- **Automatic Tag Linking** - Tags in articles become clickable links
+- **Tag Migration** - `migrateTagLinks.js` updates all posts with new tag backlinks
+- **Tag Cloud Page** - Visual tag browser at `/tags`
+- **SEO-Optimized** - Each tag has its own paginated archive
+
+### 📰 Content & Design
+- **Newspaper-Style UI** - Premium, modern design with Merriweather typography
+- **Dark Mode** - System-aware with manual toggle
+- **Responsive Design** - Mobile-first approach
+- **Infinite Scroll** - Load more posts automatically on scroll
+- **Related Posts** - Each article shows related content
+
+### 📊 Analytics & SEO
+- **Page View Tracking** - Bot-filtered analytics stored in MongoDB
+- **Sitemap Generation** - Auto-generated XML sitemaps for posts, tags, and static pages
+- **LLMs.txt** - AI-readable site summary for LLM crawlers
+- **Open Graph & Twitter Cards** - Social sharing optimization
+- **JSON-LD Structured Data** - Rich snippets for search engines
+
+### 🛡️ Admin Dashboard
+- **Password-Protected** - Simple session-based authentication
+- **AI Dashboard** - Trigger manual content generation, view logs
+- **Post Management** - Create, edit, delete posts
+- **Analytics Overview** - View page view statistics
+
+---
+
+## 🚧 Roadmap (What We Don't Have Yet)
+
+### Authentication & Users
+- [ ] User registration and login
+- [ ] User profiles and preferences
+- [ ] Social login (Google, GitHub)
+- [ ] Email verification
+
+### Content Features
+- [ ] Comments system
+- [ ] Bookmarks / Save articles
+- [ ] Share count tracking
+- [ ] Reading time estimates
+- [ ] Audio narration (TTS)
+- [ ] Newsletter subscription
+
+### Advanced Features
+- [ ] RSS Feed (`/feed.xml`)
+- [ ] Country-specific feeds (`/country/:code`)
+- [ ] Wiki-style reference pages
+- [ ] Interactive data visualizations (D3.js)
+- [ ] Real-time updates (WebSocket)
+- [ ] Search functionality
+
+### Performance
+- [ ] Redis caching
+- [ ] CDN integration
+- [ ] Image optimization pipeline
+- [ ] Service worker offline mode
+
+### Monetization
+- [ ] Premium subscription tiers
+- [ ] Ad integration
+- [ ] Donation support
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Node.js 18+
 - MongoDB (local or Atlas)
+- OpenRouter API key (for AI generation)
 
 ### Installation
 
-1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+# Clone the repository
+git clone git@github.com:NandishwarSingh/GeoPolitiq.git
 cd GeoPolitiq
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Configure environment:
-```bash
-# Edit .env with your settings
+# Configure environment
 cp .env.example .env
+# Edit .env with your settings
 ```
 
-Required environment variables:
-```
+### Environment Variables
+
+```env
+# Server
 PORT=3000
+NODE_ENV=development
+
+# Database
 MONGODB_URI=mongodb://localhost:27017/geopolitiq
-SESSION_SECRET=your-super-secret-session-key
-ADMIN_PASSWORD=admin123
+
+# Authentication
+SESSION_SECRET=your-secret-key
+ADMIN_PASSWORD=your-admin-password
+
+# AI Content Generation
+OPENROUTER_API_KEY=your-openrouter-key
+AI_SCHEDULER_ENABLED=true
+
+# Push Notifications (generate with: npx web-push generate-vapid-keys)
+VAPID_PUBLIC_KEY=your-public-key
+VAPID_PRIVATE_KEY=your-private-key
+VAPID_SUBJECT=mailto:your@email.com
 ```
 
-4. Start MongoDB (if running locally):
-```bash
-mongod
-```
+### Run Development Server
 
-5. Seed sample data (optional):
-```bash
-node scripts/seed.js
-```
-
-6. Start the development server:
 ```bash
 npm run dev
 ```
 
-7. Open http://localhost:3000
+Visit http://localhost:3000
+
+### Generate Content
+
+```bash
+# Manual AI seed (generates 10 posts)
+node scripts/aiSeed.js
+
+# Or enable scheduler in .env for automatic generation
+AI_SCHEDULER_ENABLED=true
+```
+
+---
 
 ## 📁 Project Structure
 
@@ -69,93 +156,91 @@ GeoPolitiq/
 ├── app.js                 # Express app configuration
 ├── server.js              # Server entry point
 ├── config/
-│   └── db.js              # MongoDB connection
+│   ├── ai.js              # AI/OpenRouter configuration
+│   ├── db.js              # MongoDB connection
+│   └── upload.js          # File upload config
 ├── models/
-│   └── Post.js            # Mongoose Post model
+│   ├── Post.js            # Post schema with geo fields
+│   ├── PageView.js        # Analytics schema
+│   ├── PushSubscription.js # Push notification subscriptions
+│   └── AiGenerationLog.js # AI generation history
+├── services/
+│   ├── aiContentService.js    # AI content generation
+│   ├── pushNotificationService.js # Web push handling
+│   ├── scheduler.js       # Cron scheduler
+│   ├── tagMatcher.js      # Tag linking logic
+│   └── sitemapService.js  # Sitemap generation
 ├── routes/
-│   ├── index.js           # Public routes
+│   ├── index.js           # Public routes + Push API
 │   └── admin.js           # Admin routes
-├── controllers/
-│   ├── postController.js  # Post logic
-│   └── adminController.js # Admin logic
-├── middleware/
-│   └── adminAuth.js       # Admin authentication
 ├── views/
 │   ├── layouts/           # EJS layouts
-│   ├── partials/          # Reusable components
-│   ├── admin/             # Admin views
+│   ├── partials/          # Header, footer, cards
 │   └── *.ejs              # Page templates
 ├── public/
 │   ├── css/               # Stylesheets
-│   └── js/                # Client-side JavaScript
-├── scripts/
-│   └── seed.js            # Database seeder
-└── utils/
-    └── slugify.js         # Slug utilities
+│   ├── js/main.js         # Client-side JS + Push handler
+│   └── sw.js              # Service worker
+└── scripts/
+    ├── aiSeed.js          # Manual content seeder
+    └── migrateTagLinks.js # Tag migration utility
 ```
 
-## 🛣️ Routes
+---
 
-### Public Routes
+## 🛣️ API Routes
 
+### Public
 | Route | Description |
 |-------|-------------|
 | `GET /` | Homepage with latest posts |
 | `GET /post/:slug` | Single post page |
-| `GET /tag/:tag` | Posts filtered by tag |
+| `GET /tag/:tag` | Posts by tag |
+| `GET /tags` | Tag cloud page |
+| `GET /topic/:cluster` | Posts by region |
+| `GET /api/posts` | JSON API for infinite scroll |
 
-### Admin Routes
-
+### Push Notifications
 | Route | Description |
 |-------|-------------|
-| `GET /admin` | Admin login |
-| `POST /admin` | Process login |
-| `GET /admin/dashboard` | Post management |
-| `GET /admin/posts/new` | Create post form |
-| `POST /admin/posts` | Create post |
-| `GET /admin/posts/:id/edit` | Edit post form |
-| `PUT /admin/posts/:id` | Update post |
-| `DELETE /admin/posts/:id` | Delete post |
-| `GET /admin/logout` | Logout |
+| `GET /api/push/vapid-key` | Get VAPID public key |
+| `POST /api/push/subscribe` | Subscribe to notifications |
+| `POST /api/push/unsubscribe` | Unsubscribe |
 
-## 📝 Post Model
+### Admin
+| Route | Description |
+|-------|-------------|
+| `GET /admin` | Login page |
+| `GET /admin/dashboard` | Main dashboard |
+| `GET /admin/ai` | AI generation controls |
+| `POST /admin/ai/generate` | Trigger AI generation |
 
-```javascript
-{
-  title: String,        // Required, max 200 chars
-  slug: String,         // URL-friendly, auto-generated
-  tldr: String,         // Required, max 500 chars
-  body: String,         // Markdown content
-  tags: [String],       // Lowercase, e.g., ["china", "trade"]
-  status: 'draft' | 'published',
-  publishedAt: Date,
-  featuredImage: String,
-  sources: [{ title, url }],
-  countries: [String],   // ISO codes for filtering
-  metaTitle: String,     // SEO
-  metaDescription: String
-}
-```
+---
 
-## 🔮 Future Extensibility
+## 🚀 Deployment
 
-The architecture supports easy addition of:
+See the [VPS Deployment Guide](docs/vps-deployment-guide.md) for complete instructions on deploying to Ubuntu VPS with:
+- Nginx reverse proxy
+- Let's Encrypt SSL
+- PM2 process manager
+- MongoDB setup
+- Push notification configuration
 
-- **Events**: Political events timeline
-- **Polls**: Reader opinion polls
-- **Datasets**: Interactive data visualizations
-- **Wiki Pages**: Background reference articles
-- **Country Feeds**: `/country/:code` routes
-- **RSS Feed**: `/feed.xml` for syndication
-- **Full Auth**: Replace simple password with user accounts
+---
 
-## 🎨 Design System
+## 🎨 Design
 
-- **Typography**: Georgia (headings) + Inter (body)
-- **Colors**: Navy primary, teal secondary, red accent
-- **Cards**: Google News-style post cards
-- **Layout**: Wikipedia-inspired article structure
+- **Typography**: Merriweather (headlines) + Source Sans 3 (body)
+- **Colors**: Dark navy primary, red accent, cream background
+- **Dark Mode**: Full dark theme with system preference detection
+- **Layout**: Newspaper-inspired with lead story + sidebar
+
+---
 
 ## 📄 License
 
 MIT
+
+---
+
+**Built with ❤️ for geopolitics enthusiasts**
