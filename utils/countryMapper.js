@@ -72,36 +72,71 @@ function mapCountryToCluster(country) {
  */
 function getCountryFromIP(ip) {
     return new Promise((resolve) => {
-        // Clean IP first (remove ::ffff: prefix)
-        const cleanIP = (ip || '').replace('::ffff:', '');
+        // Clean IP first (remove ::ffff: prefix for IPv4-mapped IPv6 addresses)
+        let cleanIP = (ip || '').replace('::ffff:', '').trim();
 
-        // Skip localhost/private IPs
-        if (!cleanIP || cleanIP === '::1' || cleanIP === '127.0.0.1' ||
-            cleanIP.startsWith('192.168.') || cleanIP.startsWith('10.') || cleanIP.startsWith('localhost')) {
+        // Also handle cases where IP might have port (shouldn't happen, but just in case)
+        if (cleanIP.includes(':') && !cleanIP.includes('::')) {
+            cleanIP = cleanIP.split(':')[0];
+        }
+
+        // Log for debugging
+        console.log(`[GeoIP] Processing IP: ${ip} → cleaned: ${cleanIP}`);
+
+        // Skip localhost/private IPs - these can't be geolocated
+        if (!cleanIP ||
+            cleanIP === '::1' ||
+            cleanIP === '127.0.0.1' ||
+            cleanIP === 'localhost' ||
+            cleanIP.startsWith('192.168.') ||
+            cleanIP.startsWith('10.') ||
+            cleanIP.startsWith('172.16.') ||
+            cleanIP.startsWith('172.17.') ||
+            cleanIP.startsWith('172.18.') ||
+            cleanIP.startsWith('172.19.') ||
+            cleanIP.startsWith('172.2') ||  // 172.20-29
+            cleanIP.startsWith('172.30.') ||
+            cleanIP.startsWith('172.31.') ||
+            cleanIP === '0.0.0.0' ||
+            cleanIP.startsWith('169.254.')) {  // Link-local addresses
+            console.log(`[GeoIP] IP ${cleanIP} is local/private, returning 'Local'`);
             resolve('Local');
             return;
         }
 
         const http = require('http');
-        const url = `http://ip-api.com/json/${cleanIP}?fields=status,country`;
+        const url = `http://ip-api.com/json/${cleanIP}?fields=status,country,message`;
 
-        http.get(url, { timeout: 2000 }, (res) => {
+        const request = http.get(url, { timeout: 3000 }, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try {
                     const json = JSON.parse(data);
                     if (json.status === 'success' && json.country) {
+                        console.log(`[GeoIP] IP ${cleanIP} → Country: ${json.country}`);
                         resolve(json.country);
                     } else {
+                        console.log(`[GeoIP] IP ${cleanIP} lookup failed: ${json.message || 'unknown error'}`);
                         resolve(null);
                     }
                 } catch (e) {
+                    console.log(`[GeoIP] Failed to parse response for ${cleanIP}: ${e.message}`);
                     resolve(null);
                 }
             });
-        }).on('error', () => resolve(null))
-            .on('timeout', () => resolve(null));
+        });
+
+        request.on('error', (e) => {
+            console.log(`[GeoIP] Request error for ${cleanIP}: ${e.message}`);
+            resolve(null);
+        });
+
+        request.on('timeout', () => {
+            console.log(`[GeoIP] Request timeout for ${cleanIP}`);
+            request.destroy();
+            resolve(null);
+        });
     });
 }
 

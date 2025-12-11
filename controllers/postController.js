@@ -122,7 +122,10 @@ async function getPersonalizedHero(userCluster) {
 exports.getGlobalFeed = async (req, res) => {
     try {
         // Detect user's country from IP
-        const userIP = req.ip || req.headers['x-forwarded-for']?.split(',')[0] || '';
+        // With trust proxy enabled, req.ip should have the real client IP
+        // Fallback to x-forwarded-for header if needed
+        const forwardedFor = req.headers['x-forwarded-for'];
+        const userIP = req.ip || (forwardedFor ? forwardedFor.split(',')[0].trim() : '');
         const userCountry = await getCountryFromIP(userIP);
         const userCluster = mapCountryToCluster(userCountry);
 

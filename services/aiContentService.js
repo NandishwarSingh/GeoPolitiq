@@ -363,75 +363,126 @@ async function callOpenRouter(prompt) {
 
 /**
  * Parse AI response - with ROBUST JSON extraction
+ * Multiple strategies to extract valid JSON from various response formats
  */
 function parseResponse(responseText) {
     try {
+        // Log first 500 chars for debugging
+        console.log('[AI] Raw response preview:', responseText.substring(0, 500));
+
         let cleaned = responseText.trim();
 
         // Check if response is clearly not JSON (starts with "I" or explanatory text)
         if (cleaned.startsWith('I ') || cleaned.startsWith('I\'m') || cleaned.startsWith('Unfortunately')) {
             console.error('[AI] Model returned explanatory text instead of JSON');
-            console.error('[AI] Response preview:', responseText.substring(0, 200));
+            console.error('[AI] Full response:', responseText.substring(0, 1000));
             throw new Error('Model returned text instead of JSON. Prompt enforcement failed.');
         }
 
-        // Remove markdown code blocks
+        // Strategy 1: Remove markdown code blocks
         cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '');
         cleaned = cleaned.replace(/\s*```$/i, '');
 
-        // Try to find JSON array in the response
+        // Also handle triple backticks anywhere in the response
+        cleaned = cleaned.replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
+
+        // Strategy 2: Try to find JSON array in the response
         const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
         if (arrayMatch) {
             cleaned = arrayMatch[0];
+            console.log('[AI] Found JSON array, length:', cleaned.length);
         } else {
-            // No array found - check if there's at least an object
+            // Strategy 3: No array found - check if there's at least an object
             const objMatch = cleaned.match(/\{[\s\S]*\}/);
             if (objMatch) {
                 cleaned = '[' + objMatch[0] + ']';
+                console.log('[AI] Found JSON object, wrapped in array');
             } else {
+                console.error('[AI] No JSON structure found in response');
+                console.error('[AI] Cleaned response:', cleaned.substring(0, 500));
                 throw new Error('No JSON array or object found in response');
             }
         }
 
-        // Fix common JSON issues
+        // Strategy 4: Fix common JSON issues
+        // Remove trailing commas before ] or }
         cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
 
-        // Handle truncated JSON
+        // Fix escaped quotes that might be double-escaped
+        cleaned = cleaned.replace(/\\\\"/g, '\\"');
+
+        // Remove any BOM or invisible characters
+        cleaned = cleaned.replace(/^\uFEFF/, '');
+
+        // Strategy 5: Handle truncated JSON
         let openBrackets = (cleaned.match(/\[/g) || []).length;
         let closeBrackets = (cleaned.match(/\]/g) || []).length;
         let openBraces = (cleaned.match(/\{/g) || []).length;
         let closeBraces = (cleaned.match(/\}/g) || []).length;
 
         if (openBraces > closeBraces || openBrackets > closeBrackets) {
-            console.log('[AI] Detected truncated JSON, salvaging...');
+            console.log('[AI] Detected truncated JSON, attempting to salvage...');
+            console.log(`[AI] Brackets: [ ${openBrackets} vs ] ${closeBrackets}, { ${openBraces} vs } ${closeBraces}`);
 
+            // Try to find the last complete object
             const lastCompleteObject = cleaned.lastIndexOf('},');
             if (lastCompleteObject > 0) {
                 cleaned = cleaned.substring(0, lastCompleteObject + 1) + ']';
+                console.log('[AI] Salvaged up to last complete object at position:', lastCompleteObject);
             } else {
                 const lastBrace = cleaned.lastIndexOf('}');
                 if (lastBrace > 0) {
                     cleaned = cleaned.substring(0, lastBrace + 1) + ']';
+                    console.log('[AI] Salvaged up to last closing brace at position:', lastBrace);
                 }
             }
         }
 
-        const posts = JSON.parse(cleaned);
+        // Attempt to parse
+        let posts;
+        try {
+            posts = JSON.parse(cleaned);
+        } catch (parseError) {
+            console.error('[AI] Initial parse failed:', parseError.message);
+
+            // Strategy 6: Try to fix common issues and parse again
+            // Sometimes there are newlines inside strings that need escaping
+            cleaned = cleaned.replace(/\n(?=[^"]*"[^"]*(?:"[^"]*"[^"]*)*$)/g, '\\n');
+
+            try {
+                posts = JSON.parse(cleaned);
+            } catch (secondError) {
+                console.error('[AI] Second parse attempt failed:', secondError.message);
+                console.error('[AI] Final cleaned response (first 1000 chars):', cleaned.substring(0, 1000));
+                throw new Error('Failed to parse AI response as JSON after multiple attempts');
+            }
+        }
 
         if (!Array.isArray(posts)) {
             throw new Error('Response is not an array');
         }
 
-        // Filter out incomplete posts
-        const validPosts = posts.filter(post =>
-            post && post.title && post.content && post.tldr
-        );
+        // Filter out incomplete posts - require at minimum title, content, and tldr
+        const validPosts = posts.filter(post => {
+            if (!post || !post.title || !post.content || !post.tldr) {
+                console.log('[AI] Skipping incomplete post:', post?.title?.substring(0, 50) || 'no title');
+                return false;
+            }
+            return true;
+        });
 
-        console.log(`[AI] Parsed ${validPosts.length} valid posts`);
+        console.log(`[AI] Parsed ${validPosts.length} valid posts out of ${posts.length} total`);
+
+        // Log titles of valid posts for debugging
+        validPosts.forEach((post, i) => {
+            console.log(`[AI] Post ${i + 1}: ${post.title.substring(0, 60)}...`);
+        });
+
         return validPosts;
     } catch (error) {
         console.error('[AI] Failed to parse response:', error.message);
-        console.error('[AI] Response preview:', responseText.substring(0, 300));
+        console.error('[AI] Response length:', responseText.length);
+        console.error('[AI] Response preview:', responseText.substring(0, 500));
         throw new Error('Failed to parse AI response as JSON');
     }
 }

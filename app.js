@@ -8,6 +8,14 @@ const path = require('path');
 const app = express();
 
 // ═══════════════════════════════════════════════════════
+// PROXY CONFIGURATION (Required for VPS/Nginx deployment)
+// ═══════════════════════════════════════════════════════
+
+// Trust reverse proxy (Nginx) to get real client IP from X-Forwarded-For
+// Without this, req.ip returns the proxy IP (127.0.0.1) instead of client IP
+app.set('trust proxy', true);
+
+// ═══════════════════════════════════════════════════════
 // PERFORMANCE OPTIMIZATIONS
 // ═══════════════════════════════════════════════════════
 
