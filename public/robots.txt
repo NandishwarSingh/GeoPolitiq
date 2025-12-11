@@ -4,5 +4,8 @@ Allow: /
 # Sitemaps
 Sitemap: https://geopolitiq.com/sitemap.xml
 
+# RSS Feed
+Sitemap: https://geopolitiq.com/rss.xml
+
 # AI/LLM Context
 # See /.well-known/llms.txt for AI-readable site information

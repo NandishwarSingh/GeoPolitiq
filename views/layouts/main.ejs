@@ -122,107 +122,152 @@
     <meta name="description"
         content="<%= typeof seo !== 'undefined' && seo ? seo.description : (typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis') %>">
 
-    <!-- Canonical URL -->
-    <% if (typeof seo !=='undefined' && seo && seo.canonicalUrl) { %>
-        <link rel="canonical" href="<%= seo.canonicalUrl %>">
-        <% } %>
+    <!-- SEO: Keywords -->
+    <% if (typeof seo !=='undefined' && seo && seo.keywords) { %>
+        <meta name="keywords" content="<%= seo.keywords %>">
+        <% } else { %>
+            <meta name="keywords"
+                content="geopolitics, world news, international relations, global affairs, political analysis">
+            <% } %>
 
-            <!-- Open Graph -->
-            <% if (typeof seo !=='undefined' && seo && seo.og) { %>
-                <meta property="og:title" content="<%= seo.og.title %>">
-                <meta property="og:description" content="<%= seo.og.description %>">
-                <meta property="og:image" content="<%= seo.og.image %>">
-                <meta property="og:url" content="<%= seo.og.url %>">
-                <meta property="og:type" content="<%= seo.og.type %>">
-                <meta property="og:site_name" content="<%= seo.og.siteName %>">
-                <% if (seo.og.publishedTime) { %>
-                    <meta property="article:published_time"
-                        content="<%= new Date(seo.og.publishedTime).toISOString() %>">
-                    <% } %>
-                        <% if (seo.og.modifiedTime) { %>
-                            <meta property="article:modified_time"
-                                content="<%= new Date(seo.og.modifiedTime).toISOString() %>">
-                            <% } %>
-                                <% if (seo.og.tags && seo.og.tags.length> 0) { %>
-                                    <% seo.og.tags.forEach(function(tag) { %>
-                                        <meta property="article:tag" content="<%= tag %>">
-                                        <% }); %>
+                <!-- SEO: Robots -->
+                <% if (typeof seo !=='undefined' && seo && seo.robots) { %>
+                    <meta name="robots" content="<%= seo.robots %>">
+                    <% } else { %>
+                        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+                        <% } %>
+
+                            <!-- Language -->
+                            <meta name="language" content="English">
+                            <meta http-equiv="content-language" content="en">
+
+                            <!-- RSS Feed Autodiscovery -->
+                            <link rel="alternate" type="application/rss+xml" title="GeoPolitiq RSS Feed" href="/rss">
+
+                            <!-- Canonical URL -->
+                            <% if (typeof seo !=='undefined' && seo && seo.canonicalUrl) { %>
+                                <link rel="canonical" href="<%= seo.canonicalUrl %>">
+                                <% } %>
+
+                                    <!-- Open Graph -->
+                                    <% if (typeof seo !=='undefined' && seo && seo.og) { %>
+                                        <meta property="og:title" content="<%= seo.og.title %>">
+                                        <meta property="og:description" content="<%= seo.og.description %>">
+                                        <meta property="og:image" content="<%= seo.og.image %>">
+                                        <meta property="og:url" content="<%= seo.og.url %>">
+                                        <meta property="og:type" content="<%= seo.og.type %>">
+                                        <meta property="og:site_name" content="<%= seo.og.siteName %>">
+                                        <% if (seo.og.publishedTime) { %>
+                                            <meta property="article:published_time"
+                                                content="<%= new Date(seo.og.publishedTime).toISOString() %>">
                                             <% } %>
-                                                <% } else { %>
-                                                    <meta property="og:title" content="<%= title %>">
-                                                    <meta property="og:description"
-                                                        content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis' %>">
-                                                    <meta property="og:type" content="website">
-                                                    <meta property="og:site_name" content="GeoPolitiq">
+                                                <% if (seo.og.modifiedTime) { %>
+                                                    <meta property="article:modified_time"
+                                                        content="<%= new Date(seo.og.modifiedTime).toISOString() %>">
                                                     <% } %>
+                                                        <% if (seo.og.tags && seo.og.tags.length> 0) { %>
+                                                            <% seo.og.tags.forEach(function(tag) { %>
+                                                                <meta property="article:tag" content="<%= tag %>">
+                                                                <% }); %>
+                                                                    <% } %>
+                                                                        <% } else { %>
+                                                                            <meta property="og:title"
+                                                                                content="<%= title %>">
+                                                                            <meta property="og:description"
+                                                                                content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis' %>">
+                                                                            <meta property="og:type" content="website">
+                                                                            <meta property="og:site_name"
+                                                                                content="GeoPolitiq">
+                                                                            <% } %>
 
-                                                        <!-- Twitter Card -->
-                                                        <% if (typeof seo !=='undefined' && seo && seo.twitter) { %>
-                                                            <meta name="twitter:card" content="<%= seo.twitter.card %>">
-                                                            <meta name="twitter:title"
-                                                                content="<%= seo.twitter.title %>">
-                                                            <meta name="twitter:description"
-                                                                content="<%= seo.twitter.description %>">
-                                                            <meta name="twitter:image"
-                                                                content="<%= seo.twitter.image %>">
-                                                            <% if (seo.twitter.site) { %>
-                                                                <meta name="twitter:site"
-                                                                    content="<%= seo.twitter.site %>">
-                                                                <% } %>
-                                                                    <% } else { %>
-                                                                        <meta name="twitter:card"
-                                                                            content="summary_large_image">
-                                                                        <meta name="twitter:title"
-                                                                            content="<%= title %>">
-                                                                        <meta name="twitter:description"
-                                                                            content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis' %>">
-                                                                        <% } %>
-
-                                                                            <!-- JSON-LD Structured Data -->
-                                                                            <% if (typeof seo !=='undefined' && seo &&
-                                                                                seo.jsonLd) { %>
-                                                                                <script
-                                                                                    type="application/ld+json"><%- JSON.stringify(seo.jsonLd) %></script>
-                                                                                <% } %>
-
-                                                                                    <!-- Favicon -->
-                                                                                    <link rel="icon" type="image/png"
-                                                                                        href="/favicon.png">
-
-
-                                                                                    <!-- Preload LCP image if available -->
-                                                                                    <% if (typeof featuredPost
-                                                                                        !=='undefined' && featuredPost
-                                                                                        && featuredPost.featuredImage) {
-                                                                                        %>
-                                                                                        <link rel="preload" as="image"
-                                                                                            href="<%= featuredPost.featuredImage %>"
-                                                                                            fetchpriority="high">
+                                                                                <!-- Twitter Card -->
+                                                                                <% if (typeof seo !=='undefined' && seo
+                                                                                    && seo.twitter) { %>
+                                                                                    <meta name="twitter:card"
+                                                                                        content="<%= seo.twitter.card %>">
+                                                                                    <meta name="twitter:title"
+                                                                                        content="<%= seo.twitter.title %>">
+                                                                                    <meta name="twitter:description"
+                                                                                        content="<%= seo.twitter.description %>">
+                                                                                    <meta name="twitter:image"
+                                                                                        content="<%= seo.twitter.image %>">
+                                                                                    <% if (seo.twitter.site) { %>
+                                                                                        <meta name="twitter:site"
+                                                                                            content="<%= seo.twitter.site %>">
                                                                                         <% } %>
+                                                                                            <% } else { %>
+                                                                                                <meta
+                                                                                                    name="twitter:card"
+                                                                                                    content="summary_large_image">
+                                                                                                <meta
+                                                                                                    name="twitter:title"
+                                                                                                    content="<%= title %>">
+                                                                                                <meta
+                                                                                                    name="twitter:description"
+                                                                                                    content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GeoPolitiq - Global Intelligence & Analysis' %>">
+                                                                                                <% } %>
 
-                                                                                            <!-- DNS prefetch -->
-                                                                                            <link rel="dns-prefetch"
-                                                                                                href="//images.unsplash.com">
+                                                                                                    <!-- JSON-LD Structured Data -->
+                                                                                                    <% if (typeof seo
+                                                                                                        !=='undefined'
+                                                                                                        && seo &&
+                                                                                                        seo.jsonLd) { %>
+                                                                                                        <script
+                                                                                                            type="application/ld+json"><%- JSON.stringify(seo.jsonLd) %></script>
+                                                                                                        <% } %>
 
-                                                                                            <!-- Main stylesheet - loaded async, non-blocking -->
-                                                                                            <link rel="preload"
-                                                                                                href="/css/style.css"
-                                                                                                as="style"
-                                                                                                onload="this.onload=null;this.rel='stylesheet';document.documentElement.classList.add('loaded')">
-                                                                                            <noscript>
-                                                                                                <link rel="stylesheet"
-                                                                                                    href="/css/style.css">
-                                                                                            </noscript>
+                                                                                                            <!-- Favicon -->
+                                                                                                            <link
+                                                                                                                rel="icon"
+                                                                                                                type="image/png"
+                                                                                                                href="/favicon.png">
 
-                                                                                            <!-- Fonts - Merriweather from Google Fonts -->
-                                                                                            <link rel="preconnect"
-                                                                                                href="https://fonts.googleapis.com">
-                                                                                            <link rel="preconnect"
-                                                                                                href="https://fonts.gstatic.com"
-                                                                                                crossorigin>
-                                                                                            <link
-                                                                                                href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700&display=swap"
-                                                                                                rel="stylesheet">
+
+                                                                                                            <!-- Preload LCP image if available -->
+                                                                                                            <% if
+                                                                                                                (typeof
+                                                                                                                featuredPost
+                                                                                                                !=='undefined'
+                                                                                                                &&
+                                                                                                                featuredPost
+                                                                                                                &&
+                                                                                                                featuredPost.featuredImage)
+                                                                                                                { %>
+                                                                                                                <link
+                                                                                                                    rel="preload"
+                                                                                                                    as="image"
+                                                                                                                    href="<%= featuredPost.featuredImage %>"
+                                                                                                                    fetchpriority="high">
+                                                                                                                <% } %>
+
+                                                                                                                    <!-- DNS prefetch -->
+                                                                                                                    <link
+                                                                                                                        rel="dns-prefetch"
+                                                                                                                        href="//images.unsplash.com">
+
+                                                                                                                    <!-- Main stylesheet - loaded async, non-blocking -->
+                                                                                                                    <link
+                                                                                                                        rel="preload"
+                                                                                                                        href="/css/style.css"
+                                                                                                                        as="style"
+                                                                                                                        onload="this.onload=null;this.rel='stylesheet';document.documentElement.classList.add('loaded')">
+                                                                                                                    <noscript>
+                                                                                                                        <link
+                                                                                                                            rel="stylesheet"
+                                                                                                                            href="/css/style.css">
+                                                                                                                    </noscript>
+
+                                                                                                                    <!-- Fonts - Merriweather from Google Fonts -->
+                                                                                                                    <link
+                                                                                                                        rel="preconnect"
+                                                                                                                        href="https://fonts.googleapis.com">
+                                                                                                                    <link
+                                                                                                                        rel="preconnect"
+                                                                                                                        href="https://fonts.gstatic.com"
+                                                                                                                        crossorigin>
+                                                                                                                    <link
+                                                                                                                        href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700&display=swap"
+                                                                                                                        rel="stylesheet">
 </head>
 
 <body>

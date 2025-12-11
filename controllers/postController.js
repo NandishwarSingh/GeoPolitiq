@@ -280,8 +280,13 @@ exports.getPostsByTag = async (req, res) => {
         const totalPages = Math.ceil(totalPosts / limit);
 
         res.render('tag', {
-            title: `#${tag} - GeoPolitiq`,
-            metaDescription: `All geopolitical analysis and news tagged with "${tag}".`,
+            title: `${tag} News & Analysis | GeoPolitiq`,
+            seo: buildPageSEO({
+                type: 'tag',
+                title: tag,
+                description: `Latest geopolitical news, analysis, and updates tagged with "${tag}". Stay informed with GeoPolitiq.`,
+                url: `/tag/${tag}`
+            }),
             tag,
             posts,
             popularTags,
@@ -323,8 +328,13 @@ exports.getPostsByCluster = async (req, res) => {
         const totalPages = Math.ceil(totalPosts / limit);
 
         res.render('topic', {
-            title: `${cluster} - GeoPolitiq`,
-            metaDescription: `Analysis and news about ${cluster}.`,
+            title: `${cluster} Geopolitics Coverage | GeoPolitiq`,
+            seo: buildPageSEO({
+                type: 'topic',
+                title: cluster,
+                description: `In-depth geopolitical coverage, news, and analysis about ${cluster}. Expert insights from GeoPolitiq.`,
+                url: `/topic/${cluster}`
+            }),
             cluster,
             posts,
             popularTags,

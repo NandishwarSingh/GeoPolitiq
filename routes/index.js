@@ -3,6 +3,7 @@ const router = express.Router();
 const postController = require('../controllers/postController');
 const sitemapController = require('../controllers/sitemapController');
 const llmController = require('../controllers/llmController');
+const rssController = require('../controllers/rssController');
 
 // ═══════════════════════════════════════════════════════════
 // SITEMAP & SEO ROUTES
@@ -13,6 +14,16 @@ router.get('/sitemap-posts-:page.xml', sitemapController.getPostsSitemap);
 router.get('/sitemap-static.xml', sitemapController.getStaticSitemap);
 router.get('/sitemap-tags.xml', sitemapController.getTagsSitemap);
 router.get('/llms-full.txt', llmController.getFullContext);
+
+// ═══════════════════════════════════════════════════════════
+// RSS FEED ROUTES
+// ═══════════════════════════════════════════════════════════
+
+router.get('/rss', rssController.getMainFeed);
+router.get('/rss.xml', rssController.getMainFeed);
+router.get('/feed', rssController.getMainFeed);
+router.get('/rss/tag/:tag', rssController.getTagFeed);
+router.get('/rss/topic/:topic', rssController.getTopicFeed);
 
 // ═══════════════════════════════════════════════════════════
 // PUBLIC ROUTES
@@ -80,9 +91,15 @@ router.get('/api/tag/:tag', postController.getTagPostsApi);
  * About page
  */
 router.get('/about', (req, res) => {
+    const { buildPageSEO } = require('../utils/seoHelper');
     res.render('about', {
-        title: 'About - Geo Politiq',
-        metaDescription: 'About Geo Politiq - Your source for geopolitical intelligence and analysis.'
+        title: 'About Us | GeoPolitiq',
+        seo: buildPageSEO({
+            type: 'website',
+            title: 'About Us',
+            description: 'Learn about GeoPolitiq, your trusted source for in-depth geopolitical analysis, breaking international news, and global intelligence coverage.',
+            url: '/about'
+        })
     });
 });
 
@@ -91,9 +108,15 @@ router.get('/about', (req, res) => {
  * Contact page
  */
 router.get('/contact', (req, res) => {
+    const { buildPageSEO } = require('../utils/seoHelper');
     res.render('contact', {
-        title: 'Contact - Geo Politiq',
-        metaDescription: 'Get in touch with the Geo Politiq team.'
+        title: 'Contact Us | GeoPolitiq',
+        seo: buildPageSEO({
+            type: 'website',
+            title: 'Contact Us',
+            description: 'Get in touch with the GeoPolitiq team. We welcome your feedback, story tips, and partnership inquiries.',
+            url: '/contact'
+        })
     });
 });
 
@@ -102,9 +125,15 @@ router.get('/contact', (req, res) => {
  * Privacy Policy page
  */
 router.get('/privacy', (req, res) => {
+    const { buildPageSEO } = require('../utils/seoHelper');
     res.render('privacy', {
-        title: 'Privacy Policy - Geo Politiq',
-        metaDescription: 'Privacy Policy for Geo Politiq - How we collect, use, and protect your information.'
+        title: 'Privacy Policy | GeoPolitiq',
+        seo: buildPageSEO({
+            type: 'website',
+            title: 'Privacy Policy',
+            description: 'Privacy Policy for GeoPolitiq - Learn how we collect, use, and protect your personal information.',
+            url: '/privacy'
+        })
     });
 });
 

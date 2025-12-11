@@ -225,6 +225,8 @@ Concrete next steps with dates if available
   {
     "title": "Specific headline with key name/number (60-90 chars)",
     "tldr": "One-sentence summary with key fact (150-200 chars)",
+    "metaTitle": "SEO-optimized title for search engines (50-60 chars, include key terms)",
+    "metaDescription": "Compelling search snippet with call-to-action (150-160 chars)",
     "content": "Full 1000+ word article following structure above",
     "tags": ["specific", "relevant", "tags", "for", "article"],
     "topicCluster": "USA",
@@ -562,6 +564,9 @@ async function saveGeneratedPosts(posts) {
                 authorName: postData.authorName || 'Staff',
                 authorOrg: postData.authorOrg || '',
                 sourceUrl: postData.sourceUrl || '',
+                // SEO fields - use AI-generated or fallback to title/tldr
+                metaTitle: postData.metaTitle || postData.title.substring(0, 60),
+                metaDescription: postData.metaDescription || postData.tldr.substring(0, 160),
                 status: 'published',
                 publishTime: new Date()
             });

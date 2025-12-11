@@ -18,9 +18,19 @@ function truncate(text, maxLength) {
 }
 
 /**
+ * Capitalize first letter of each word
+ */
+function capitalizeWords(text) {
+    if (!text) return '';
+    return text.split(' ').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+}
+
+/**
  * Build complete SEO data object for a page
  * @param {Object} options - SEO configuration
- * @param {string} options.type - Page type: 'website', 'article', 'profile'
+ * @param {string} options.type - Page type: 'website', 'article', 'tag', 'topic', 'homepage'
  * @param {string} options.title - Page title
  * @param {string} options.description - Page description
  * @param {string} options.image - Image URL (optional)
@@ -43,10 +53,36 @@ function buildPageSEO(options = {}) {
     const metaTitle = truncate(title, 60);
     const metaDescription = truncate(description, 160);
 
+    // Smart title formatting based on page type (using | separator for better SEO)
+    let formattedTitle;
+    switch (type) {
+        case 'homepage':
+            formattedTitle = `${SITE_NAME} | Breaking Geopolitical News & Analysis`;
+            break;
+        case 'tag':
+            formattedTitle = `${capitalizeWords(title)} News & Analysis | ${SITE_NAME}`;
+            break;
+        case 'topic':
+            formattedTitle = `${title} Geopolitics Coverage | ${SITE_NAME}`;
+            break;
+        case 'article':
+            formattedTitle = `${metaTitle} | ${SITE_NAME}`;
+            break;
+        default:
+            formattedTitle = `${metaTitle} | ${SITE_NAME}`;
+    }
+
+    // Generate keywords from article tags or use defaults
+    const defaultKeywords = 'geopolitics, world news, international relations, global affairs, political analysis';
+    const keywords = article?.tags?.length > 0
+        ? article.tags.join(', ')
+        : defaultKeywords;
+
     const seo = {
         // Basic meta
-        title: `${metaTitle} - ${SITE_NAME}`,
+        title: formattedTitle,
         description: metaDescription,
+        keywords: keywords,
 
         // Canonical
         canonicalUrl: fullUrl,
