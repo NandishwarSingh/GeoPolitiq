@@ -730,8 +730,16 @@ async function saveGeneratedPosts(posts, existingData = { titles: [], sourceUrls
 
             // ═══════════════════════════════════════════════════════════
             // DEDUPLICATION LAYER 2: Source URL Check
+            // Skip YouTube/video URLs as they're not unique news sources
             // ═══════════════════════════════════════════════════════════
-            if (postData.sourceUrl && existingSourceUrls.has(postData.sourceUrl)) {
+            const isVideoUrl = postData.sourceUrl && (
+                postData.sourceUrl.includes('youtube.com') ||
+                postData.sourceUrl.includes('youtu.be') ||
+                postData.sourceUrl.includes('vimeo.com') ||
+                postData.sourceUrl.includes('dailymotion.com')
+            );
+
+            if (postData.sourceUrl && !isVideoUrl && existingSourceUrls.has(postData.sourceUrl)) {
                 console.log(`[AI] ⚠️ Skipping duplicate source URL: ${postData.sourceUrl}`);
                 continue;
             }
