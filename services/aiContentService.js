@@ -164,9 +164,10 @@ function getDefaultImage(title) {
  * Build the prompt for content generation - REAL-TIME NEWS ONLY
  * Uses Perplexity Sonar Pro for web search to get TODAY's news
  */
-function buildPrompt(existingTitles = []) {
-    const avoidSection = existingTitles.length > 0
-        ? `\n\n**AVOID THESE TOPICS (already published):**\n${existingTitles.slice(0, 10).map((t, i) => `${i + 1}. ${t}`).join('\n')}`
+function buildPrompt(existingTitles = [], skipAvoidSection = false) {
+    // Only add avoid section if we have titles AND not skipping
+    const avoidSection = (!skipAvoidSection && existingTitles.length > 0)
+        ? `\n\n**PREFER DIFFERENT ANGLES (these topics were recently covered, find new angles or different stories):**\n${existingTitles.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\nNote: If you cannot find completely different stories, cover the same topics from a NEW ANGLE or with UPDATED information.`
         : '';
 
     const now = new Date();
@@ -177,20 +178,32 @@ function buildPrompt(existingTitles = []) {
 
     return `You are a professional news journalist API. Today is ${todayFormatted} (${dateISO}).
 
+**CRITICAL - READ THIS FIRST:**
+- You MUST return a valid JSON array. This is NON-NEGOTIABLE.
+- Do NOT explain, apologize, or say you cannot do something.
+- Do NOT start your response with "I cannot", "I'm unable", "Unfortunately", etc.
+- If you cannot find perfect matches, find the CLOSEST available news stories.
+- ALWAYS output at least 3-5 articles as a JSON array.
+- Your ONLY valid response format is: [{"title": "...", ...}, {"title": "...", ...}]
+
 **OUTPUT FORMAT: JSON ARRAY ONLY**
 - Return ONLY valid JSON starting with [ and ending with ]
 - No explanations, no markdown code blocks, no text before/after JSON
+- If search results are limited, write about available stories
 
-**DATE REQUIREMENT: TODAY (${dateISO})**
-- Search for news published TODAY
+**DATE PREFERENCE: Recent news (today or yesterday)**
+- Prefer news from today (${dateISO})
+- If today's news is limited, include yesterday's important stories
 - Include specific dates, times, and sources in your articles
 
-**REGIONS (one article each):**
+**REGIONS (one article each, find what's available):**
 1. USA - Politics, economy, tech, sports, or major US news
 2. INDIA - Politics, cricket, Bollywood, economy, or major India news  
 3. UK - Politics, royals, sports, or major UK news
 4. EU - European affairs, economy, or major EU news
 5. GLOBAL - International affairs, UN, climate, space, or world news
+
+If a region has no news today, substitute with another interesting story from any region.
 
 **ARTICLE QUALITY REQUIREMENTS:**
 - Write like a REAL journalist, not AI
@@ -220,7 +233,7 @@ Direct quotes from named officials, analysts, or stakeholders
 ## What's Next
 Concrete next steps with dates if available
 
-**JSON FORMAT:**
+**JSON FORMAT (return exactly this structure):**
 [
   {
     "title": "Specific headline with key name/number (60-90 chars)",
@@ -240,7 +253,7 @@ Concrete next steps with dates if available
 ]
 ${avoidSection}
 
-RESPOND WITH JSON ARRAY ONLY.`;
+START YOUR RESPONSE WITH [ (opening bracket) - NO OTHER TEXT ALLOWED.`;
 }
 
 
@@ -504,6 +517,7 @@ async function getTodaysTitles() {
 
 /**
  * Generate posts using AI
+ * Includes retry mechanism: if first attempt fails, retry without avoid section
  */
 async function generatePosts() {
     console.log('[AI] Starting post generation...');
@@ -511,11 +525,31 @@ async function generatePosts() {
     const existingTitles = await getTodaysTitles();
     console.log(`[AI] Found ${existingTitles.length} existing posts to avoid duplicates`);
 
-    const prompt = buildPrompt(existingTitles);
-    const responseText = await callOpenRouter(prompt);
-    const posts = parseResponse(responseText);
+    // First attempt: with avoid section
+    try {
+        const prompt = buildPrompt(existingTitles, false);
+        const responseText = await callOpenRouter(prompt);
+        const posts = parseResponse(responseText);
 
-    return posts;
+        if (posts.length > 0) {
+            return posts;
+        }
+        console.log('[AI] First attempt returned 0 posts, retrying without avoid section...');
+    } catch (error) {
+        console.log(`[AI] First attempt failed: ${error.message}`);
+        console.log('[AI] Retrying without avoid section...');
+    }
+
+    // Second attempt: without avoid section (fresh stories)
+    try {
+        const freshPrompt = buildPrompt([], true); // Skip avoid section entirely
+        const responseText = await callOpenRouter(freshPrompt);
+        const posts = parseResponse(responseText);
+        return posts;
+    } catch (error) {
+        console.error('[AI] Second attempt also failed:', error.message);
+        throw error;
+    }
 }
 
 /**
