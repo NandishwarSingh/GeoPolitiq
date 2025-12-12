@@ -14,6 +14,115 @@ const { sanitizeTables } = require('../utils/tableSanitizer');
 let currentApiKeyIndex = 0;
 let currentModelIndex = 0;
 
+// ═══════════════════════════════════════════════════════════
+// DEDUPLICATION UTILITIES
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Common stopwords to ignore when comparing titles
+ */
+const STOPWORDS = new Set([
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'to', 'of', 'in', 'on', 'at', 'for', 'with', 'as', 'by', 'about',
+    'and', 'or', 'but', 'not', 'this', 'that', 'it', 'its', 'they',
+    'from', 'has', 'have', 'had', 'will', 'would', 'could', 'should',
+    'says', 'said', 'after', 'before', 'over', 'amid', 'during', 'into',
+    'new', 'news', 'report', 'reports', 'update', 'latest', 'breaking',
+    'today', 'now', 'just', 'more', 'than', 'also', 'how', 'why', 'what',
+    'who', 'when', 'where', 'which', 'while', 'between', 'against', 'under'
+]);
+
+/**
+ * Extract meaningful keywords from a title
+ */
+function extractKeywords(title) {
+    if (!title) return [];
+    return title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove punctuation
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !STOPWORDS.has(word));
+}
+
+/**
+ * Calculate Jaccard similarity between two word arrays
+ * Returns value between 0 (no overlap) and 1 (identical)
+ */
+function calculateSimilarity(words1, words2) {
+    if (words1.length === 0 || words2.length === 0) return 0;
+
+    const set1 = new Set(words1);
+    const set2 = new Set(words2);
+    const intersection = words1.filter(w => set2.has(w));
+    const union = new Set([...words1, ...words2]);
+
+    return intersection.length / union.size;
+}
+
+/**
+ * Check if a title is similar to any existing post titles
+ * Returns { similar: boolean, matchedTitle: string?, similarity: number }
+ */
+function isSimilarToExisting(newTitle, existingTitles, threshold = 0.6) {
+    const newKeywords = extractKeywords(newTitle);
+
+    for (const existingTitle of existingTitles) {
+        const existingKeywords = extractKeywords(existingTitle);
+        const similarity = calculateSimilarity(newKeywords, existingKeywords);
+
+        if (similarity >= threshold) {
+            return {
+                similar: true,
+                matchedTitle: existingTitle,
+                similarity: Math.round(similarity * 100)
+            };
+        }
+    }
+
+    return { similar: false, matchedTitle: null, similarity: 0 };
+}
+
+/**
+ * Get cluster priorities based on recent post distribution
+ * Returns array of clusters that need more coverage
+ */
+async function getClusterPriorities() {
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const recentPosts = await Post.find({
+        publishTime: { $gte: last24Hours },
+        status: 'published'
+    }).select('topicCluster').lean();
+
+    const clusterCounts = {
+        USA: 0,
+        India: 0,
+        UK: 0,
+        EU: 0,
+        Global: 0
+    };
+
+    recentPosts.forEach(p => {
+        if (p.topicCluster && clusterCounts.hasOwnProperty(p.topicCluster)) {
+            clusterCounts[p.topicCluster]++;
+        }
+    });
+
+    // Find clusters with less than 2 posts in last 24 hours
+    const priorityClusters = Object.entries(clusterCounts)
+        .filter(([_, count]) => count < 2)
+        .map(([cluster]) => cluster);
+
+    console.log('[AI] Cluster distribution (24h):', clusterCounts);
+    console.log('[AI] Priority clusters:', priorityClusters.length > 0 ? priorityClusters.join(', ') : 'None');
+
+    return priorityClusters;
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMAGE VALIDATION
+// ═══════════════════════════════════════════════════════════
+
 /**
  * Domains that block hotlinking - skip these
  */
@@ -164,10 +273,24 @@ function getDefaultImage(title) {
  * Build the prompt for content generation - REAL-TIME NEWS ONLY
  * Uses Perplexity Sonar Pro for web search to get TODAY's news
  */
-function buildPrompt(existingTitles = [], skipAvoidSection = false) {
-    // Only add avoid section if we have titles AND not skipping
-    const avoidSection = (!skipAvoidSection && existingTitles.length > 0)
-        ? `\n\n**PREFER DIFFERENT ANGLES (these topics were recently covered, find new angles or different stories):**\n${existingTitles.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\nNote: If you cannot find completely different stories, cover the same topics from a NEW ANGLE or with UPDATED information.`
+function buildPrompt(existingTitles = [], avoidKeywords = [], priorityClusters = [], skipAvoidSection = false) {
+    // Build avoid section with titles AND keywords
+    let avoidSection = '';
+    if (!skipAvoidSection && (existingTitles.length > 0 || avoidKeywords.length > 0)) {
+        const titlePart = existingTitles.length > 0
+            ? `\n**RECENTLY COVERED TOPICS (find DIFFERENT stories):**\n${existingTitles.slice(0, 10).map((t, i) => `${i + 1}. ${t}`).join('\n')}`
+            : '';
+
+        const keywordPart = avoidKeywords.length > 0
+            ? `\n**OVERUSED KEYWORDS (avoid stories focused on these):** ${avoidKeywords.slice(0, 15).join(', ')}`
+            : '';
+
+        avoidSection = titlePart + keywordPart + '\n\nIMPORTANT: Find stories about DIFFERENT people, events, or topics. Do NOT cover the same news with slightly different wording.';
+    }
+
+    // Build priority section
+    const prioritySection = priorityClusters.length > 0
+        ? `\n**PRIORITY REGIONS (need more coverage):** ${priorityClusters.join(', ')} - Try to include at least one story from these regions.`
         : '';
 
     const now = new Date();
@@ -191,9 +314,8 @@ function buildPrompt(existingTitles = [], skipAvoidSection = false) {
 - No explanations, no markdown code blocks, no text before/after JSON
 - If search results are limited, write about available stories
 
-**DATE PREFERENCE: Recent news (today or yesterday)**
-- Prefer news from today (${dateISO})
-- If today's news is limited, include yesterday's important stories
+**DATE REQUIREMENT: TODAY (${dateISO})**
+- Search for news published TODAY
 - Include specific dates, times, and sources in your articles
 
 **REGIONS (one article each, find what's available):**
@@ -252,6 +374,7 @@ Concrete next steps with dates if available
   }
 ]
 ${avoidSection}
+${prioritySection}
 
 START YOUR RESPONSE WITH [ (opening bracket) - NO OTHER TEXT ALLOWED.`;
 }
@@ -503,36 +626,64 @@ function parseResponse(responseText) {
 }
 
 /**
- * Get existing post titles from last 50 posts to avoid duplicate topics
+ * Get existing post data for deduplication
+ * Returns { titles: string[], sourceUrls: string[], keywords: string[] }
  */
-async function getTodaysTitles() {
+async function getExistingPostData() {
     const posts = await Post.find({})
         .sort({ createdAt: -1 })
-        .limit(50)
-        .select('title')
+        .limit(100) // Increased from 50 to 100
+        .select('title sourceUrl')
         .lean();
 
-    return posts.map(p => p.title);
+    const titles = posts.map(p => p.title);
+    const sourceUrls = posts.map(p => p.sourceUrl).filter(Boolean);
+
+    // Extract unique keywords from all titles
+    const allKeywords = new Set();
+    titles.forEach(title => {
+        extractKeywords(title).forEach(kw => allKeywords.add(kw));
+    });
+
+    // Get top 30 most common keywords
+    const keywordCounts = {};
+    titles.forEach(title => {
+        extractKeywords(title).forEach(kw => {
+            keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+        });
+    });
+
+    const topKeywords = Object.entries(keywordCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 30)
+        .map(([kw]) => kw);
+
+    return { titles, sourceUrls, keywords: topKeywords };
 }
 
 /**
  * Generate posts using AI
- * Includes retry mechanism: if first attempt fails, retry without avoid section
+ * Includes retry mechanism and passes deduplication data to save function
  */
 async function generatePosts() {
     console.log('[AI] Starting post generation...');
 
-    const existingTitles = await getTodaysTitles();
-    console.log(`[AI] Found ${existingTitles.length} existing posts to avoid duplicates`);
+    // Get existing post data for deduplication
+    const existingData = await getExistingPostData();
+    console.log(`[AI] Found ${existingData.titles.length} existing posts to check against`);
+    console.log(`[AI] Top keywords to avoid: ${existingData.keywords.slice(0, 10).join(', ')}`);
 
-    // First attempt: with avoid section
+    // Get priority clusters for balanced coverage
+    const priorityClusters = await getClusterPriorities();
+
+    // First attempt: with avoid section and priority clusters
     try {
-        const prompt = buildPrompt(existingTitles, false);
+        const prompt = buildPrompt(existingData.titles, existingData.keywords, priorityClusters, false);
         const responseText = await callOpenRouter(prompt);
         const posts = parseResponse(responseText);
 
         if (posts.length > 0) {
-            return posts;
+            return { posts, existingData };
         }
         console.log('[AI] First attempt returned 0 posts, retrying without avoid section...');
     } catch (error) {
@@ -542,10 +693,10 @@ async function generatePosts() {
 
     // Second attempt: without avoid section (fresh stories)
     try {
-        const freshPrompt = buildPrompt([], true); // Skip avoid section entirely
+        const freshPrompt = buildPrompt([], [], priorityClusters, true);
         const responseText = await callOpenRouter(freshPrompt);
         const posts = parseResponse(responseText);
-        return posts;
+        return { posts, existingData };
     } catch (error) {
         console.error('[AI] Second attempt also failed:', error.message);
         throw error;
@@ -553,14 +704,37 @@ async function generatePosts() {
 }
 
 /**
- * Save generated posts to database
+ * Save generated posts to database with multi-layer deduplication
  */
-async function saveGeneratedPosts(posts) {
+async function saveGeneratedPosts(posts, existingData = { titles: [], sourceUrls: [] }) {
     const savedPosts = [];
+
+    // Make copies we can update as we save posts
+    const existingTitles = [...existingData.titles];
+    const existingSourceUrls = new Set(existingData.sourceUrls);
 
     for (const postData of posts) {
         try {
             console.log(`[AI] Processing: ${postData.title}`);
+
+            // ═══════════════════════════════════════════════════════════
+            // DEDUPLICATION LAYER 1: Title Similarity Check
+            // ═══════════════════════════════════════════════════════════
+            const similarityCheck = isSimilarToExisting(postData.title, existingTitles, 0.6);
+            if (similarityCheck.similar) {
+                console.log(`[AI] ⚠️ Skipping similar title (${similarityCheck.similarity}% match)`);
+                console.log(`[AI]    New: ${postData.title.substring(0, 60)}...`);
+                console.log(`[AI]    Existing: ${similarityCheck.matchedTitle.substring(0, 60)}...`);
+                continue;
+            }
+
+            // ═══════════════════════════════════════════════════════════
+            // DEDUPLICATION LAYER 2: Source URL Check
+            // ═══════════════════════════════════════════════════════════
+            if (postData.sourceUrl && existingSourceUrls.has(postData.sourceUrl)) {
+                console.log(`[AI] ⚠️ Skipping duplicate source URL: ${postData.sourceUrl}`);
+                continue;
+            }
 
             // Use reliable Pexels image based on topic
             const featuredImage = await searchNewsImage(postData.title);
@@ -578,9 +752,12 @@ async function saveGeneratedPosts(posts) {
                 .replace(/^-|-$/g, '')
                 .substring(0, 100);
 
+            // ═══════════════════════════════════════════════════════════
+            // DEDUPLICATION LAYER 3: Exact Slug Check (safety net)
+            // ═══════════════════════════════════════════════════════════
             const existingSlug = await Post.findOne({ slug });
             if (existingSlug) {
-                console.log(`[AI] Skipping duplicate slug: ${slug}`);
+                console.log(`[AI] ⚠️ Skipping duplicate slug: ${slug}`);
                 continue;
             }
 
@@ -607,12 +784,20 @@ async function saveGeneratedPosts(posts) {
 
             await newPost.save();
             savedPosts.push(newPost);
+
+            // Update tracking lists to catch duplicates within same batch
+            existingTitles.push(postData.title);
+            if (postData.sourceUrl) {
+                existingSourceUrls.add(postData.sourceUrl);
+            }
+
             console.log(`[AI] ✅ Saved: ${newPost.title}`);
         } catch (error) {
             console.error(`[AI] Failed to save post:`, error.message);
         }
     }
 
+    console.log(`[AI] 📊 Summary: ${savedPosts.length} saved out of ${posts.length} generated`);
     return savedPosts;
 }
 
@@ -621,8 +806,8 @@ async function saveGeneratedPosts(posts) {
  */
 async function runGeneration() {
     try {
-        const posts = await generatePosts();
-        const saved = await saveGeneratedPosts(posts);
+        const { posts, existingData } = await generatePosts();
+        const saved = await saveGeneratedPosts(posts, existingData);
         console.log(`[AI] Saved ${saved.length} posts. Starting verification...`);
 
         // Verify posts using Perplexity Sonar
