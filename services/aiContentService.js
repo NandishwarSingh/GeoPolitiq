@@ -889,7 +889,7 @@ module.exports = {
     testConnection,
     buildPrompt,
     parseResponse,
-    getTodaysTitles,
+    getExistingPostData,
     deleteAllPosts,
     searchNewsImage
 };
