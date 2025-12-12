@@ -80,6 +80,80 @@
                 <% } %>
     </div>
 
+    <!-- Comparison Stats -->
+    <div class="comparison-section">
+        <h3>📊 Period Comparisons</h3>
+        <div class="comparison-grid">
+            <!-- Today vs Yesterday -->
+            <div class="comparison-card">
+                <div class="comparison-header">Today vs Yesterday</div>
+                <div class="comparison-values">
+                    <span class="comparison-current">
+                        <%= stats.todayCount %>
+                    </span>
+                    <span class="comparison-vs">vs</span>
+                    <span class="comparison-previous">
+                        <%= stats.yesterdayCount %>
+                    </span>
+                </div>
+                <div class="comparison-change <%= stats.dayChange >= 0 ? 'positive' : 'negative' %>">
+                    <%= stats.dayChange>= 0 ? '↑' : '↓' %> <%= Math.abs(stats.dayChange) %>%
+                </div>
+            </div>
+
+            <!-- This Week vs Last Week -->
+            <div class="comparison-card">
+                <div class="comparison-header">This Week vs Last Week</div>
+                <div class="comparison-values">
+                    <span class="comparison-current">
+                        <%= stats.weekCount %>
+                    </span>
+                    <span class="comparison-vs">vs</span>
+                    <span class="comparison-previous">
+                        <%= stats.lastWeekCount %>
+                    </span>
+                </div>
+                <div class="comparison-change <%= stats.weekChange >= 0 ? 'positive' : 'negative' %>">
+                    <%= stats.weekChange>= 0 ? '↑' : '↓' %> <%= Math.abs(stats.weekChange) %>%
+                </div>
+            </div>
+
+            <!-- This Month vs Last Month -->
+            <div class="comparison-card">
+                <div class="comparison-header">This Month vs Last Month</div>
+                <div class="comparison-values">
+                    <span class="comparison-current">
+                        <%= stats.monthCount %>
+                    </span>
+                    <span class="comparison-vs">vs</span>
+                    <span class="comparison-previous">
+                        <%= stats.lastMonthCount %>
+                    </span>
+                </div>
+                <div class="comparison-change <%= stats.monthChange >= 0 ? 'positive' : 'negative' %>">
+                    <%= stats.monthChange>= 0 ? '↑' : '↓' %> <%= Math.abs(stats.monthChange) %>%
+                </div>
+            </div>
+
+            <!-- This Year vs Last Year -->
+            <div class="comparison-card">
+                <div class="comparison-header">This Year vs Last Year</div>
+                <div class="comparison-values">
+                    <span class="comparison-current">
+                        <%= stats.yearCount %>
+                    </span>
+                    <span class="comparison-vs">vs</span>
+                    <span class="comparison-previous">
+                        <%= stats.lastYearCount %>
+                    </span>
+                </div>
+                <div class="comparison-change <%= stats.yearChange >= 0 ? 'positive' : 'negative' %>">
+                    <%= stats.yearChange>= 0 ? '↑' : '↓' %> <%= Math.abs(stats.yearChange) %>%
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="analytics-info">
         <h3>📋 About These Stats</h3>
         <ul>
@@ -228,6 +302,83 @@
         color: #666;
         font-size: 0.875rem;
         font-style: italic;
+    }
+
+    /* Comparison Section */
+    .comparison-section {
+        background: #252530;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .comparison-section h3 {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        color: #fff;
+    }
+
+    .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .comparison-card {
+        background: #1a1a2e;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .comparison-header {
+        font-size: 0.75rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+    }
+
+    .comparison-values {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .comparison-current {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .comparison-vs {
+        font-size: 0.75rem;
+        color: #666;
+    }
+
+    .comparison-previous {
+        font-size: 1.25rem;
+        color: #888;
+    }
+
+    .comparison-change {
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .comparison-change.positive {
+        color: #4CAF50;
+        background: rgba(76, 175, 80, 0.15);
+    }
+
+    .comparison-change.negative {
+        color: #f44336;
+        background: rgba(244, 67, 54, 0.15);
     }
 
     .analytics-info {
