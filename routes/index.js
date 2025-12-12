@@ -13,6 +13,7 @@ router.get('/sitemap.xml', sitemapController.getIndex);
 router.get('/sitemap-posts-:page.xml', sitemapController.getPostsSitemap);
 router.get('/sitemap-static.xml', sitemapController.getStaticSitemap);
 router.get('/sitemap-tags.xml', sitemapController.getTagsSitemap);
+router.get('/sitemap-news.xml', sitemapController.getNewsSitemap);
 router.get('/llms-full.txt', llmController.getFullContext);
 
 // ═══════════════════════════════════════════════════════════

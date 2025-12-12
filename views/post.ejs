@@ -13,21 +13,27 @@
                             <%= post.title %>
                         </h1>
 
-                        <%# Meta: Date & Tags %>
+                        <%# Meta: Date, Reading Time & Tags %>
                             <div class="article-meta">
                                 <time datetime="<%= post.publishTime %>">
                                     <%= new Date(post.publishTime).toLocaleDateString('en-US', { month: 'long' ,
                                         day: 'numeric' , year: 'numeric' }) %>
                                 </time>
-                                <% if (post.tags && post.tags.length> 0) { %>
+                                <% if (typeof readingTime !=='undefined' ) { %>
                                     <span class="meta-sep">•</span>
-                                    <% post.tags.slice(0, 2).forEach(function(tag, i) { %>
-                                        <a href="/tag/<%= tag %>" class="meta-tag">
-                                            <%= tag %>
-                                        </a>
-                                        <%= i < 1 && post.tags.length> 1 ? ', ' : '' %>
-                                            <% }); %>
-                                                <% } %>
+                                    <span class="reading-time">
+                                        <%= readingTime %> min read
+                                    </span>
+                                    <% } %>
+                                        <% if (post.tags && post.tags.length> 0) { %>
+                                            <span class="meta-sep">•</span>
+                                            <% post.tags.slice(0, 2).forEach(function(tag, i) { %>
+                                                <a href="/tag/<%= tag %>" class="meta-tag">
+                                                    <%= tag %>
+                                                </a>
+                                                <%= i < 1 && post.tags.length> 1 ? ', ' : '' %>
+                                                    <% }); %>
+                                                        <% } %>
                             </div>
 
                             <%# Featured Image %>

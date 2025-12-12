@@ -75,3 +75,19 @@ exports.getTagsSitemap = async (req, res) => {
         res.status(500).send('Error generating sitemap');
     }
 };
+
+/**
+ * GET /sitemap-news.xml
+ * Returns Google News sitemap (articles from last 48 hours)
+ */
+exports.getNewsSitemap = async (req, res) => {
+    try {
+        const xml = await sitemapService.generateNewsSitemap();
+        res.set('Content-Type', 'application/xml');
+        res.set('Cache-Control', 'public, max-age=1800'); // 30 min cache - news updates frequently
+        res.send(xml);
+    } catch (error) {
+        console.error('News sitemap error:', error);
+        res.status(500).send('Error generating sitemap');
+    }
+};

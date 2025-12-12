@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Preconnect to external resources for faster loading -->
+    <link rel="preconnect" href="https://images.pexels.com">
+    <link rel="dns-prefetch" href="https://images.pexels.com">
+
     <!-- Critical inline styles - Render immediately without blocking -->
     <style>
         /* Prevent FOUC */
@@ -215,59 +219,73 @@
                                                                                                         <script
                                                                                                             type="application/ld+json"><%- JSON.stringify(seo.jsonLd) %></script>
                                                                                                         <% } %>
-
-                                                                                                            <!-- Favicon -->
-                                                                                                            <link
-                                                                                                                rel="icon"
-                                                                                                                type="image/png"
-                                                                                                                href="/favicon.png">
-
-
-                                                                                                            <!-- Preload LCP image if available -->
+                                                                                                            <!-- FAQ JSON-LD for rich snippets -->
                                                                                                             <% if
                                                                                                                 (typeof
-                                                                                                                featuredPost
+                                                                                                                seo
                                                                                                                 !=='undefined'
+                                                                                                                && seo
                                                                                                                 &&
-                                                                                                                featuredPost
-                                                                                                                &&
-                                                                                                                featuredPost.featuredImage)
+                                                                                                                seo.faqJsonLd)
                                                                                                                 { %>
-                                                                                                                <link
-                                                                                                                    rel="preload"
-                                                                                                                    as="image"
-                                                                                                                    href="<%= featuredPost.featuredImage %>"
-                                                                                                                    fetchpriority="high">
+                                                                                                                <script
+                                                                                                                    type="application/ld+json"><%- JSON.stringify(seo.faqJsonLd) %></script>
                                                                                                                 <% } %>
 
-                                                                                                                    <!-- DNS prefetch -->
+                                                                                                                    <!-- Favicon -->
                                                                                                                     <link
-                                                                                                                        rel="dns-prefetch"
-                                                                                                                        href="//images.unsplash.com">
+                                                                                                                        rel="icon"
+                                                                                                                        type="image/png"
+                                                                                                                        href="/favicon.png">
 
-                                                                                                                    <!-- Main stylesheet - loaded async, non-blocking -->
-                                                                                                                    <link
-                                                                                                                        rel="preload"
-                                                                                                                        href="/css/style.css"
-                                                                                                                        as="style"
-                                                                                                                        onload="this.onload=null;this.rel='stylesheet';document.documentElement.classList.add('loaded')">
-                                                                                                                    <noscript>
+
+                                                                                                                    <!-- Preload LCP image if available -->
+                                                                                                                    <% if
+                                                                                                                        (typeof
+                                                                                                                        featuredPost
+                                                                                                                        !=='undefined'
+                                                                                                                        &&
+                                                                                                                        featuredPost
+                                                                                                                        &&
+                                                                                                                        featuredPost.featuredImage)
+                                                                                                                        {
+                                                                                                                        %>
                                                                                                                         <link
-                                                                                                                            rel="stylesheet"
-                                                                                                                            href="/css/style.css">
-                                                                                                                    </noscript>
+                                                                                                                            rel="preload"
+                                                                                                                            as="image"
+                                                                                                                            href="<%= featuredPost.featuredImage %>"
+                                                                                                                            fetchpriority="high">
+                                                                                                                        <% }
+                                                                                                                            %>
 
-                                                                                                                    <!-- Fonts - Merriweather from Google Fonts -->
-                                                                                                                    <link
-                                                                                                                        rel="preconnect"
-                                                                                                                        href="https://fonts.googleapis.com">
-                                                                                                                    <link
-                                                                                                                        rel="preconnect"
-                                                                                                                        href="https://fonts.gstatic.com"
-                                                                                                                        crossorigin>
-                                                                                                                    <link
-                                                                                                                        href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700&display=swap"
-                                                                                                                        rel="stylesheet">
+                                                                                                                            <!-- DNS prefetch -->
+                                                                                                                            <link
+                                                                                                                                rel="dns-prefetch"
+                                                                                                                                href="//images.unsplash.com">
+
+                                                                                                                            <!-- Main stylesheet - loaded async, non-blocking -->
+                                                                                                                            <link
+                                                                                                                                rel="preload"
+                                                                                                                                href="/css/style.css"
+                                                                                                                                as="style"
+                                                                                                                                onload="this.onload=null;this.rel='stylesheet';document.documentElement.classList.add('loaded')">
+                                                                                                                            <noscript>
+                                                                                                                                <link
+                                                                                                                                    rel="stylesheet"
+                                                                                                                                    href="/css/style.css">
+                                                                                                                            </noscript>
+
+                                                                                                                            <!-- Fonts - Merriweather from Google Fonts -->
+                                                                                                                            <link
+                                                                                                                                rel="preconnect"
+                                                                                                                                href="https://fonts.googleapis.com">
+                                                                                                                            <link
+                                                                                                                                rel="preconnect"
+                                                                                                                                href="https://fonts.gstatic.com"
+                                                                                                                                crossorigin>
+                                                                                                                            <link
+                                                                                                                                href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700&display=swap"
+                                                                                                                                rel="stylesheet">
 </head>
 
 <body>

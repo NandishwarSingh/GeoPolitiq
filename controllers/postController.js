@@ -230,6 +230,10 @@ exports.getPostBySlug = async (req, res) => {
             getPopularTags()
         ]);
 
+        // Calculate reading time (200 words per minute)
+        const wordCount = (post.rawContent || '').split(/\s+/).length;
+        const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+
         res.render('post', {
             title: `${post.title} - GeoPolitiq`,
             metaDescription: post.metaDescription || post.tldr,
@@ -244,7 +248,8 @@ exports.getPostBySlug = async (req, res) => {
             }),
             post,
             relatedPosts,
-            popularTags
+            popularTags,
+            readingTime
         });
 
     } catch (error) {

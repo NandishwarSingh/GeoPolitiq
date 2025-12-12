@@ -107,12 +107,14 @@ function buildPageSEO(options = {}) {
         },
 
         // JSON-LD (will be stringified in template)
-        jsonLd: null
+        jsonLd: null,
+        faqJsonLd: null
     };
 
     // Generate appropriate JSON-LD based on page type
     if (type === 'article' && article) {
         seo.jsonLd = generateArticleJSONLD(article);
+        seo.faqJsonLd = generateFAQJSONLD(article);
         seo.og.publishedTime = article.publishTime;
         seo.og.modifiedTime = article.updatedAt;
         if (article.tags && article.tags.length > 0) {
@@ -214,12 +216,62 @@ function generateBreadcrumbJSONLD(crumbs) {
     };
 }
 
+/**
+ * Generate FAQ JSON-LD from article content
+ * Extracts Q&A pairs from ## headers (treated as questions)
+ */
+function generateFAQJSONLD(post) {
+    if (!post.rawContent) return null;
+
+    const faqs = [];
+
+    // Match ## headers followed by content (until next ## or end)
+    const sectionPattern = /## ([^\n]+)\n([\s\S]*?)(?=\n## |$)/g;
+    let match;
+
+    while ((match = sectionPattern.exec(post.rawContent)) !== null && faqs.length < 5) {
+        const question = match[1].replace(/[*#`]/g, '').trim();
+        let answer = match[2].trim();
+
+        // Clean up the answer - remove markdown formatting
+        answer = answer
+            .replace(/\*\*([^*]+)\*\*/g, '$1') // Bold
+            .replace(/\*([^*]+)\*/g, '$1')     // Italic
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Links
+            .replace(/^[-*]\s+/gm, '')          // List markers
+            .replace(/\|[^|]+\|/g, '')          // Table cells
+            .replace(/\n+/g, ' ')               // Newlines to spaces
+            .trim();
+
+        // Only add if we have meaningful Q&A
+        if (question.length > 10 && answer.length > 50) {
+            faqs.push({
+                '@type': 'Question',
+                'name': question,
+                'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': truncate(answer, 500)
+                }
+            });
+        }
+    }
+
+    if (faqs.length === 0) return null;
+
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': faqs
+    };
+}
+
 module.exports = {
     buildPageSEO,
     generateArticleJSONLD,
     generateWebsiteJSONLD,
     generateOrganizationJSONLD,
     generateBreadcrumbJSONLD,
+    generateFAQJSONLD,
     truncate,
     SITE_URL,
     SITE_NAME
