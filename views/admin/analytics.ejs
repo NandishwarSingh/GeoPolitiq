@@ -154,6 +154,108 @@
         </div>
     </div>
 
+    <!-- Notification Stats -->
+    <div class="notification-section">
+        <h3>🔔 Push Notifications</h3>
+        <div class="notification-grid">
+            <div class="notification-stat">
+                <span class="notification-value">
+                    <%= notificationStats.total %>
+                </span>
+                <span class="notification-label">Total Subscribers</span>
+            </div>
+            <div class="notification-stat">
+                <span class="notification-value">
+                    <%= notificationStats.active %>
+                </span>
+                <span class="notification-label">Active (30 days)</span>
+            </div>
+        </div>
+        <% if (notificationStats.byCountry && notificationStats.byCountry.length> 0) { %>
+            <div class="notification-countries">
+                <span class="country-label">By Preference:</span>
+                <% notificationStats.byCountry.forEach(function(c) { %>
+                    <span class="country-badge">
+                        <%= c.country %>: <%= c.count %>
+                    </span>
+                    <% }); %>
+            </div>
+            <% } %>
+    </div>
+
+    <!-- Popular Posts -->
+    <div class="popular-section">
+        <h3>🔥 Top 10 Posts</h3>
+        <% if (popularPosts && popularPosts.length> 0) { %>
+            <table class="popular-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Post Title</th>
+                        <th>Views</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% popularPosts.forEach(function(p, i) { %>
+                        <tr>
+                            <td class="rank">
+                                <%= i + 1 %>
+                            </td>
+                            <td class="post-title">
+                                <a href="<%= p.path %>" target="_blank">
+                                    <%= p.title %>
+                                </a>
+                            </td>
+                            <td class="views">
+                                <%= p.views.toLocaleString() %>
+                            </td>
+                        </tr>
+                        <% }); %>
+                </tbody>
+            </table>
+            <% } else { %>
+                <p class="no-data">No post views recorded yet.</p>
+                <% } %>
+    </div>
+
+    <!-- Daily Views Table with CSV Export -->
+    <div class="daily-section">
+        <div class="section-header">
+            <h3>📊 Daily Traffic (Last 30 Days)</h3>
+            <a href="/admin/analytics/export" class="btn-export">📥 Download CSV</a>
+        </div>
+        <% if (dailyHistory && dailyHistory.length> 0) { %>
+            <div class="table-scroll">
+                <table class="daily-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Views</th>
+                            <th>Growth</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% dailyHistory.forEach(function(day) { %>
+                            <tr>
+                                <td class="date">
+                                    <%= day.date %>
+                                </td>
+                                <td class="views">
+                                    <%= day.views.toLocaleString() %>
+                                </td>
+                                <td class="growth <%= day.growth >= 0 ? 'positive' : 'negative' %>">
+                                    <%= day.growth>= 0 ? '↑' : '↓' %> <%= Math.abs(day.growth) %>%
+                                </td>
+                            </tr>
+                            <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            <% } else { %>
+                <p class="no-data">No daily data yet.</p>
+                <% } %>
+    </div>
+
     <div class="analytics-info">
         <h3>📋 About These Stats</h3>
         <ul>
@@ -403,5 +505,206 @@
         padding: 0.4rem 0;
         color: #aaa;
         font-size: 0.875rem;
+    }
+
+    /* Notification Section */
+    .notification-section {
+        background: #252530;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .notification-section h3 {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        color: #fff;
+    }
+
+    .notification-grid {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .notification-stat {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .notification-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .notification-label {
+        font-size: 0.75rem;
+        color: #888;
+        text-transform: uppercase;
+    }
+
+    .notification-countries {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .country-label {
+        font-size: 0.8rem;
+        color: #888;
+    }
+
+    .country-badge {
+        background: #1a1a2e;
+        color: #aaa;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+
+    /* Popular Posts Section */
+    .popular-section {
+        background: #252530;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .popular-section h3 {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        color: #fff;
+    }
+
+    .popular-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .popular-table th {
+        text-align: left;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #666;
+        padding: 0.5rem;
+        border-bottom: 1px solid #333;
+    }
+
+    .popular-table td {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid #2a2a3a;
+    }
+
+    .popular-table .rank {
+        width: 40px;
+        font-weight: 700;
+        color: #888;
+    }
+
+    .popular-table .post-title a {
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .popular-table .post-title a:hover {
+        color: #3b82f6;
+    }
+
+    .popular-table .views {
+        text-align: right;
+        color: #4CAF50;
+        font-weight: 600;
+    }
+
+    /* Daily Traffic Section */
+    .daily-section {
+        background: #252530;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .section-header h3 {
+        font-size: 1rem;
+        color: #fff;
+        margin: 0;
+    }
+
+    .btn-export {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .btn-export:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .table-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .daily-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .daily-table th {
+        position: sticky;
+        top: 0;
+        background: #252530;
+        text-align: left;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #666;
+        padding: 0.5rem;
+        border-bottom: 1px solid #333;
+    }
+
+    .daily-table td {
+        padding: 0.6rem 0.5rem;
+        border-bottom: 1px solid #2a2a3a;
+        font-size: 0.9rem;
+    }
+
+    .daily-table .date {
+        color: #fff;
+    }
+
+    .daily-table .views {
+        color: #aaa;
+    }
+
+    .daily-table .growth {
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .daily-table .growth.positive {
+        color: #4CAF50;
+    }
+
+    .daily-table .growth.negative {
+        color: #f44336;
+    }
+
+    .daily-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.03);
     }
 </style>

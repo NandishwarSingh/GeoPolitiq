@@ -90,20 +90,8 @@ router.post('/ai/trigger', adminAuth, adminController.triggerAiGeneration);
 router.post('/ai/toggle', adminAuth, adminController.toggleAiScheduler);
 
 // ═══════════════════════════════════════════════════════════
-// SETTINGS ROUTES
+// ANALYTICS ROUTES
 // ═══════════════════════════════════════════════════════════
-
-/**
- * GET /admin/settings
- * AI settings page (model selection)
- */
-router.get('/settings', adminAuth, adminController.showSettings);
-
-/**
- * POST /admin/settings
- * Save AI settings
- */
-router.post('/settings', adminAuth, adminController.saveSettings);
 
 /**
  * GET /admin/analytics
@@ -111,4 +99,11 @@ router.post('/settings', adminAuth, adminController.saveSettings);
  */
 router.get('/analytics', adminAuth, adminController.showAnalytics);
 
+/**
+ * GET /admin/analytics/export
+ * Export analytics data as CSV
+ */
+router.get('/analytics/export', adminAuth, adminController.exportAnalyticsCsv);
+
 module.exports = router;
+

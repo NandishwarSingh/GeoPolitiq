@@ -181,5 +181,56 @@ PageViewSchema.statics.getCountryBreakdown = async function (limit = 5) {
     return { countries, total: totalVisits };
 };
 
+// Get daily view counts for last N days with growth percentage
+PageViewSchema.statics.getDailyHistory = async function (days = 30) {
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const results = await this.aggregate([
+        { $match: { timestamp: { $gte: startDate } } },
+        {
+            $group: {
+                _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+                count: { $sum: 1 }
+            }
+        },
+        { $sort: { _id: -1 } }
+    ]);
+
+    // Calculate growth % for each day vs previous day
+    return results.map((day, i) => {
+        const previousDay = results[i + 1];
+        let growth = 0;
+        if (previousDay && previousDay.count > 0) {
+            growth = Math.round(((day.count - previousDay.count) / previousDay.count) * 100);
+        } else if (!previousDay && day.count > 0) {
+            growth = 100; // First day with data
+        }
+        return {
+            date: day._id,
+            views: day.count,
+            growth
+        };
+    });
+};
+
+// Get popular posts by view count
+PageViewSchema.statics.getPopularPosts = async function (limit = 10) {
+    return this.aggregate([
+        { $match: { path: { $regex: /^\/post\// } } },
+        { $group: { _id: '$path', views: { $sum: 1 } } },
+        { $sort: { views: -1 } },
+        { $limit: limit },
+        {
+            $project: {
+                path: '$_id',
+                slug: { $substr: ['$_id', 6, -1] }, // Remove '/post/' prefix
+                views: 1,
+                _id: 0
+            }
+        }
+    ]);
+};
+
 module.exports = mongoose.model('PageView', PageViewSchema);
+
 

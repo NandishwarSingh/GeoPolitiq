@@ -560,21 +560,43 @@ exports.toggleAiScheduler = (req, res) => {
 
 /**
  * GET /admin/analytics
- * Show analytics dashboard with visitor stats and country breakdown
+ * Show analytics dashboard with visitor stats, popular posts, and notifications
  */
 exports.showAnalytics = async (req, res) => {
     try {
-        const [stats, countryData] = await Promise.all([
+        const PushSubscription = require('../models/PushSubscription');
+
+        const [stats, countryData, dailyHistory, popularPostsRaw, notificationStats] = await Promise.all([
             PageView.getStats(),
-            PageView.getCountryBreakdown(5)
+            PageView.getCountryBreakdown(5),
+            PageView.getDailyHistory(30),
+            PageView.getPopularPosts(10),
+            PushSubscription.getStats()
         ]);
+
+        // Enrich popular posts with titles from database
+        const slugs = popularPostsRaw.map(p => p.slug);
+        const posts = await Post.find({ slug: { $in: slugs } })
+            .select('slug title')
+            .lean();
+
+        const titleMap = {};
+        posts.forEach(p => { titleMap[p.slug] = p.title; });
+
+        const popularPosts = popularPostsRaw.map(p => ({
+            ...p,
+            title: titleMap[p.slug] || p.slug
+        }));
 
         res.render('admin/analytics', {
             title: 'Analytics - Admin',
             layout: 'layouts/admin',
             activePage: 'analytics',
             stats,
-            countryData
+            countryData,
+            dailyHistory,
+            popularPosts,
+            notificationStats
         });
     } catch (error) {
         console.error('Analytics dashboard error:', error);
@@ -583,5 +605,29 @@ exports.showAnalytics = async (req, res) => {
             layout: 'layouts/admin',
             message: 'Failed to load analytics'
         });
+    }
+};
+
+/**
+ * GET /admin/analytics/export
+ * Export daily traffic data as CSV
+ */
+exports.exportAnalyticsCsv = async (req, res) => {
+    try {
+        const dailyHistory = await PageView.getDailyHistory(30);
+
+        const csvRows = ['Date,Views,Growth %'];
+        dailyHistory.forEach(day => {
+            csvRows.push(`${day.date},${day.views},${day.growth}%`);
+        });
+
+        const csv = csvRows.join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=geopolitiq-analytics.csv');
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV export error:', error);
+        res.status(500).json({ error: 'Failed to export analytics' });
     }
 };
