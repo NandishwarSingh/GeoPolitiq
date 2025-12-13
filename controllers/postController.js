@@ -483,13 +483,18 @@ exports.getPostsApi = async (req, res) => {
 
 /**
  * GET /api/posts/:slug/related - JSON API for related posts infinite scroll
- * Query params: page (default 1), limit (default 5)
+ * Query params: page (default 1), limit (default 5), exclude (comma-separated slugs)
  */
 exports.getRelatedPostsApi = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
         const skip = (page - 1) * limit;
+
+        // Parse excluded slugs to prevent duplicates
+        const excludeSlugs = req.query.exclude
+            ? req.query.exclude.split(',').filter(Boolean)
+            : [];
 
         // Find the main post first
         const post = await Post.findOne({
@@ -510,6 +515,11 @@ exports.getRelatedPostsApi = async (req, res) => {
                 { topicCluster: post.topicCluster }
             ]
         };
+
+        // Exclude already-displayed slugs
+        if (excludeSlugs.length > 0) {
+            query.slug = { $nin: excludeSlugs };
+        }
 
         const [relatedPosts, totalRelated] = await Promise.all([
             Post.find(query)

@@ -683,6 +683,17 @@
                         let hasMore = sentinel.dataset.hasMore === 'true';
                         const slug = sentinel.dataset.slug;
 
+                        // Collect all initially displayed slugs to prevent duplicates
+                        function getDisplayedSlugs() {
+                            return [...relatedList.querySelectorAll('.related-item')]
+                                .map(a => {
+                                    const href = a.getAttribute('href') || '';
+                                    return href.replace('/post/', '');
+                                })
+                                .filter(Boolean);
+                        }
+                        let displayedSlugs = getDisplayedSlugs();
+
                         function createRelatedHTML(post) {
                             const imgHtml = post.featuredImage
                                 ? `<img src="${post.featuredImage}" alt="${post.title}" class="related-thumb">`
@@ -702,12 +713,17 @@
                             sentinel.style.display = 'flex';
 
                             try {
-                                const response = await fetch(`/api/posts/${slug}/related?page=${currentPage}&limit=5`);
+                                const excludeParam = displayedSlugs.length > 0 ? `&exclude=${displayedSlugs.join(',')}` : '';
+                                const response = await fetch(`/api/posts/${slug}/related?page=${currentPage}&limit=5${excludeParam}`);
                                 const data = await response.json();
 
                                 if (data.posts && data.posts.length > 0) {
                                     data.posts.forEach(post => {
-                                        relatedList.insertAdjacentHTML('beforeend', createRelatedHTML(post));
+                                        // Skip if already displayed (double-check)
+                                        if (!displayedSlugs.includes(post.slug)) {
+                                            relatedList.insertAdjacentHTML('beforeend', createRelatedHTML(post));
+                                            displayedSlugs.push(post.slug);
+                                        }
                                     });
                                     currentPage++;
                                     hasMore = data.hasMore;
