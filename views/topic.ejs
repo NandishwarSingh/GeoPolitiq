@@ -1,92 +1,206 @@
-<div class="topic-page">
+<div class="feed-container">
     <!-- Topic Header -->
-    <header class="topic-header">
-        <h1 class="topic-title">
+    <header class="tag-header">
+        <h1 class="headline-lg">
+            <span class="tag-hash">🌍</span>
             <%= cluster %>
         </h1>
-        <p class="topic-description">
-            All analysis and news related to <strong>
-                <%= cluster %>
-            </strong>
+        <p class="tag-description">
+            All analysis and news related to "<%= cluster %>"
         </p>
     </header>
 
-    <!-- Posts Grid -->
     <% if (posts && posts.length> 0) { %>
-        <section class="posts-section" aria-label="Topic Articles">
-            <div class="posts-grid">
-                <% posts.forEach(function(post) { %>
-                    <article class="post-card">
-                        <a href="/post/<%= post.slug %>" class="post-card-link">
-                            <div class="post-card-content">
-                                <h2 class="post-card-title">
-                                    <%= post.title %>
-                                </h2>
-                                <p class="post-card-tldr">
-                                    <%= post.tldr %>
-                                </p>
-
-                                <div class="post-card-meta">
-                                    <div class="post-card-tags">
-                                        <% if (post.tags && post.tags.length> 0) { %>
-                                            <% post.tags.slice(0, 3).forEach(function(tag) { %>
-                                                <span class="tag">
-                                                    <%= tag %>
-                                                </span>
-                                                <% }); %>
-                                                    <% } %>
-                                    </div>
-                                    <time class="post-card-time"
-                                        datetime="<%= post.publishTime ? post.publishTime.toISOString() : '' %>">
-                                        <% if (post.publishTime) { %>
-                                            <%= new Date(post.publishTime).toLocaleDateString('en-US', { month: 'short'
-                                                , day: 'numeric' , year: 'numeric' }) %>
-                                                <% } %>
-                                    </time>
-                                </div>
-                            </div>
-                        </a>
-                    </article>
-                    <% }); %>
-            </div>
-
-            <!-- Pagination -->
-            <% if (totalPages> 1) { %>
-                <nav class="pagination" aria-label="Topic pagination">
-                    <% if (hasPrevPage) { %>
-                        <a href="/topic/<%= encodeURIComponent(cluster) %>?page=<%= currentPage - 1 %>"
-                            class="pagination-btn pagination-prev" rel="prev">
-                            ← Previous
-                        </a>
+        <!-- Posts Grid (same style as tag page) -->
+        <div class="tag-grid" id="topic-grid">
+            <% posts.forEach(function(post) { %>
+                <a href="/post/<%= post.slug %>" class="tag-card">
+                    <% if (post.featuredImage) { %>
+                        <div class="tag-card-image">
+                            <img src="<%= post.featuredImage %>" alt="<%= post.imageAlt || post.title %>"
+                                loading="lazy">
+                        </div>
                         <% } %>
+                            <div class="tag-card-content">
+                                <% if (post.topicCluster) { %>
+                                    <span class="kicker">
+                                        <%= post.topicCluster %>
+                                    </span>
+                                    <% } %>
+                                        <h2 class="tag-card-title">
+                                            <%= post.title %>
+                                        </h2>
+                                        <p class="tag-card-summary">
+                                            <%= post.tldr.substring(0, 150) %>
+                                                <%= post.tldr.length> 150 ? '...' : '' %>
+                                        </p>
+                                        <% if (post.tags && post.tags.length> 0) { %>
+                                            <div class="tag-card-tags">
+                                                <% post.tags.slice(0, 4).forEach(function(t) { %>
+                                                    <span class="feed-tag">
+                                                        <%= t %>
+                                                    </span>
+                                                    <% }); %>
+                                            </div>
+                                            <% } %>
+                            </div>
+                </a>
+                <% }); %>
+        </div>
 
-                            <span class="pagination-info">
-                                Page <strong>
-                                    <%= currentPage %>
-                                </strong> of <strong>
-                                    <%= totalPages %>
-                                </strong>
-                            </span>
-
-                            <% if (hasNextPage) { %>
-                                <a href="/topic/<%= encodeURIComponent(cluster) %>?page=<%= currentPage + 1 %>"
-                                    class="pagination-btn pagination-next" rel="next">
-                                    Next →
-                                </a>
-                                <% } %>
-                </nav>
-                <% } %>
-        </section>
-
+        <!-- Infinite Scroll Loading Sentinel -->
+        <div id="topic-sentinel" class="feed-sentinel" data-cluster="<%= cluster %>" data-page="2"
+            data-has-more="<%= hasNextPage %>">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">Loading more posts...</span>
+        </div>
+        <div id="topic-end" class="feed-end" style="display: none;">
+            <span>You've reached the end</span>
+        </div>
         <% } else { %>
             <!-- Empty State -->
-            <section class="empty-state">
-                <div class="empty-content">
-                    <span class="empty-icon" aria-hidden="true">📚</span>
-                    <h2>No articles found</h2>
-                    <p>No articles have been published about "<%= cluster %>" yet.</p>
-                    <a href="/" class="btn btn-primary">← Back to Home</a>
-                </div>
-            </section>
+            <div class="empty-state">
+                <span class="empty-icon">🌍</span>
+                <h2 class="headline-md">No posts found</h2>
+                <p>No posts have been published about "<%= cluster %>" yet.</p>
+                <a href="/" class="btn btn-primary">Back to Home</a>
+            </div>
             <% } %>
 </div>
+
+<style>
+    /* Infinite Scroll Styles for Topic Page */
+    .feed-sentinel {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: var(--gap-md);
+        padding: var(--gap-xl);
+        color: var(--color-ink-muted);
+    }
+
+    .feed-sentinel[data-has-more="false"] {
+        display: none;
+    }
+
+    .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--color-ink-faded);
+        border-top-color: var(--color-red);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-text {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .feed-end {
+        text-align: center;
+        padding: var(--gap-xl);
+        color: var(--color-ink-muted);
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        border-top: var(--border-hair);
+    }
+</style>
+
+<script>
+    (function () {
+        const sentinel = document.getElementById('topic-sentinel');
+        const topicEnd = document.getElementById('topic-end');
+        const topicGrid = document.getElementById('topic-grid');
+
+        if (!sentinel || !topicGrid) return;
+
+        let isLoading = false;
+        let currentPage = parseInt(sentinel.dataset.page) || 2;
+        let hasMore = sentinel.dataset.hasMore === 'true';
+        const cluster = sentinel.dataset.cluster;
+
+        function createPostHTML(post) {
+            const imgHtml = post.featuredImage
+                ? `<div class="tag-card-image"><img src="${post.featuredImage}" alt="${post.imageAlt || post.title}" loading="lazy"></div>`
+                : '';
+
+            const clusterHtml = post.topicCluster
+                ? `<span class="kicker">${post.topicCluster}</span>`
+                : '';
+
+            const tagsHtml = post.tags && post.tags.length > 0
+                ? `<div class="tag-card-tags">${post.tags.slice(0, 4).map(t => `<span class="feed-tag">${t}</span>`).join('')}</div>`
+                : '';
+
+            const summary = post.tldr.length > 150 ? post.tldr.substring(0, 150) + '...' : post.tldr;
+
+            return `
+            <a href="/post/${post.slug}" class="tag-card">
+                ${imgHtml}
+                <div class="tag-card-content">
+                    ${clusterHtml}
+                    <h2 class="tag-card-title">${post.title}</h2>
+                    <p class="tag-card-summary">${summary}</p>
+                    ${tagsHtml}
+                </div>
+            </a>
+        `;
+        }
+
+        async function loadMorePosts() {
+            if (isLoading || !hasMore) return;
+
+            isLoading = true;
+            sentinel.style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/topic/${encodeURIComponent(cluster)}?page=${currentPage}&limit=5`);
+                const data = await response.json();
+
+                if (data.posts && data.posts.length > 0) {
+                    data.posts.forEach(post => {
+                        topicGrid.insertAdjacentHTML('beforeend', createPostHTML(post));
+                    });
+                    currentPage++;
+                    hasMore = data.hasMore;
+                    sentinel.dataset.hasMore = hasMore;
+                } else {
+                    hasMore = false;
+                }
+
+                if (!hasMore) {
+                    sentinel.style.display = 'none';
+                    topicEnd.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Intersection Observer for infinite scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && hasMore) {
+                    loadMorePosts();
+                }
+            });
+        }, { rootMargin: '200px' });
+
+        if (hasMore) {
+            observer.observe(sentinel);
+        } else {
+            sentinel.style.display = 'none';
+        }
+    })();
+</script>

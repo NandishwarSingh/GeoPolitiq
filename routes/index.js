@@ -83,6 +83,12 @@ router.get('/api/posts/:slug/related', postController.getRelatedPostsApi);
  */
 router.get('/api/tag/:tag', postController.getTagPostsApi);
 
+/**
+ * GET /api/topic/:cluster
+ * JSON API for topic posts infinite scroll
+ */
+router.get('/api/topic/:cluster', postController.getTopicPostsApi);
+
 // ═══════════════════════════════════════════════════════════
 // STATIC PAGES
 // ═══════════════════════════════════════════════════════════

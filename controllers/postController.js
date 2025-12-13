@@ -570,5 +570,43 @@ exports.getTagPostsApi = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/topic/:cluster - JSON API for topic posts infinite scroll
+ * Query params: page (default 1), limit (default 5)
+ */
+exports.getTopicPostsApi = async (req, res) => {
+    try {
+        const cluster = req.params.cluster;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const skip = (page - 1) * limit;
+
+        // Case-insensitive regex to match variations like GLOBAL/Global/global
+        const clusterRegex = new RegExp(`^${cluster}$`, 'i');
+
+        const [posts, totalPosts] = await Promise.all([
+            Post.find({ status: 'published', topicCluster: clusterRegex })
+                .select('slug title tldr tags topicCluster publishTime featuredImage imageAlt')
+                .sort({ publishTime: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Post.countDocuments({ status: 'published', topicCluster: clusterRegex })
+        ]);
+
+        const totalPages = Math.ceil(totalPosts / limit);
+
+        res.json({
+            posts,
+            currentPage: page,
+            totalPages,
+            hasMore: page < totalPages
+        });
+    } catch (error) {
+        console.error('API topic posts error:', error);
+        res.status(500).json({ error: 'Failed to load topic posts' });
+    }
+};
+
 // Export helper for use in other controllers
 exports.getPopularTags = getPopularTags;
