@@ -439,14 +439,24 @@ exports.getPostsApi = async (req, res) => {
         const limit = parseInt(req.query.limit) || 5;
         const skip = (page - 1) * limit;
 
+        // Parse excluded slugs (comma-separated) to prevent duplicates
+        const excludeSlugs = req.query.exclude
+            ? req.query.exclude.split(',').filter(Boolean)
+            : [];
+
+        const query = { status: 'published' };
+        if (excludeSlugs.length > 0) {
+            query.slug = { $nin: excludeSlugs };
+        }
+
         const [posts, totalPosts] = await Promise.all([
-            Post.find({ status: 'published' })
+            Post.find(query)
                 .select('slug title tldr tags topicCluster publishTime featuredImage imageAlt')
                 .sort({ publishTime: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            Post.countDocuments({ status: 'published' })
+            Post.countDocuments(query)
         ]);
 
         const totalPages = Math.ceil(totalPosts / limit);

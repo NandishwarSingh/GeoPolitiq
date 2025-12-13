@@ -783,9 +783,9 @@ async function saveGeneratedPosts(posts, existingData = { titles: [], sourceUrls
                 authorName: postData.authorName || 'Staff',
                 authorOrg: postData.authorOrg || '',
                 sourceUrl: postData.sourceUrl || '',
-                // SEO fields - use AI-generated or fallback to title/tldr
-                metaTitle: postData.metaTitle || postData.title.substring(0, 60),
-                metaDescription: postData.metaDescription || postData.tldr.substring(0, 160),
+                // SEO fields - use AI-generated or fallback to title/tldr, always truncate to schema limits
+                metaTitle: (postData.metaTitle || postData.title).substring(0, 60),
+                metaDescription: (postData.metaDescription || postData.tldr).substring(0, 160),
                 status: 'published',
                 publishTime: new Date()
             });

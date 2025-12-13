@@ -11,20 +11,28 @@
 
         <div class="footer-column">
             <h4>Topics</h4>
-            <a href="/tag/analysis">Analysis</a>
-            <a href="/tag/breaking">Breaking News</a>
-            <a href="/tag/economy">Economy</a>
-            <a href="/tag/security">Security</a>
-            <a href="/tag/diplomacy">Diplomacy</a>
+            <% if (typeof footerTopics !=='undefined' && footerTopics && footerTopics.length> 0) { %>
+                <% footerTopics.forEach(topic=> { %>
+                    <a href="/tag/<%= topic.name %>">
+                        <%= topic.name.replace(/-/g, ' ' ).replace(/\b\w/g, l=> l.toUpperCase()) %>
+                    </a>
+                    <% }); %>
+                        <% } else { %>
+                            <span class="footer-empty">No topics yet</span>
+                            <% } %>
         </div>
 
         <div class="footer-column">
             <h4>Regions</h4>
-            <a href="/tag/asia">Asia-Pacific</a>
-            <a href="/tag/europe">Europe</a>
-            <a href="/tag/americas">Americas</a>
-            <a href="/tag/middle-east">Middle East</a>
-            <a href="/tag/africa">Africa</a>
+            <% if (typeof footerRegions !=='undefined' && footerRegions && footerRegions.length> 0) { %>
+                <% footerRegions.forEach(region=> { %>
+                    <a href="/topic/<%= region.name %>">
+                        <%= region.name %>
+                    </a>
+                    <% }); %>
+                        <% } else { %>
+                            <span class="footer-empty">No regions yet</span>
+                            <% } %>
         </div>
 
         <div class="footer-column">

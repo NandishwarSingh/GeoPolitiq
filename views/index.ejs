@@ -259,6 +259,17 @@
         `;
         }
 
+        // Collect all initially displayed slugs to exclude from pagination
+        function getDisplayedSlugs() {
+            return [...document.querySelectorAll('.feed-item, .lead-story a, .sidebar-story h3 a')]
+                .map(a => {
+                    const href = a.getAttribute('href') || '';
+                    return href.replace('/post/', '');
+                })
+                .filter(Boolean);
+        }
+        let displayedSlugs = getDisplayedSlugs();
+
         async function loadMorePosts() {
             if (isLoading || !hasMore) return;
 
@@ -266,12 +277,14 @@
             sentinel.style.display = 'flex';
 
             try {
-                const response = await fetch(`/api/posts?page=${currentPage}&limit=5`);
+                const excludeParam = displayedSlugs.length > 0 ? `&exclude=${displayedSlugs.join(',')}` : '';
+                const response = await fetch(`/api/posts?page=${currentPage}&limit=5${excludeParam}`);
                 const data = await response.json();
 
                 if (data.posts && data.posts.length > 0) {
                     data.posts.forEach(post => {
                         newsFeed.insertAdjacentHTML('beforeend', createPostHTML(post));
+                        displayedSlugs.push(post.slug); // Track to prevent future duplicates
                     });
                     currentPage++;
                     hasMore = data.hasMore;

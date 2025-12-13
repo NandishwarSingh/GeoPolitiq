@@ -83,7 +83,9 @@ const adminRoutes = require('./routes/admin');
 
 // Analytics middleware (track page views with bot filtering)
 const analyticsMiddleware = require('./middleware/analytics');
+const footerMiddleware = require('./middleware/footerMiddleware');
 app.use(analyticsMiddleware);
+app.use(footerMiddleware);
 
 app.use('/', indexRoutes);
 app.use('/admin', adminRoutes);
