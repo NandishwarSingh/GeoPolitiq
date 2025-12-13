@@ -26,15 +26,34 @@ async function getFooterData() {
             { $project: { name: '$_id', count: 1, _id: 0 } }
         ]);
 
-        // Get regions: topic clusters by post count
-        const regions = await Post.aggregate([
+        // Get regions: topic clusters by post count (normalized to handle case differences)
+        const rawRegions = await Post.aggregate([
             { $match: { status: 'published' } },
             { $group: { _id: '$topicCluster', count: { $sum: 1 } } },
             { $match: { _id: { $ne: null } } },
             { $sort: { count: -1 } },
-            { $limit: 5 },
             { $project: { name: '$_id', count: 1, _id: 0 } }
         ]);
+
+        // Normalize and deduplicate regions (merge GLOBAL/Global, USA/usa, etc.)
+        const regionMap = new Map();
+        for (const r of rawRegions) {
+            // Normalize to title case (first letter uppercase, rest as-is for acronyms)
+            const normalized = r.name.charAt(0).toUpperCase() + r.name.slice(1).toLowerCase();
+            // Special handling for common acronyms
+            const displayName = ['Usa', 'Uk', 'Eu'].includes(normalized)
+                ? normalized.toUpperCase()
+                : (normalized === 'Global' ? 'Global' : r.name);
+
+            if (regionMap.has(displayName)) {
+                regionMap.get(displayName).count += r.count;
+            } else {
+                regionMap.set(displayName, { name: displayName, count: r.count });
+            }
+        }
+        const regions = Array.from(regionMap.values())
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
 
         footerCache = { topics, regions, lastUpdated: now };
         return footerCache;

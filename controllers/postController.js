@@ -319,28 +319,36 @@ exports.getPostsByCluster = async (req, res) => {
         const limit = 20;
         const skip = (page - 1) * limit;
 
+        // Case-insensitive regex to match variations like GLOBAL/Global/global
+        const clusterRegex = new RegExp(`^${cluster}$`, 'i');
+
         const [posts, totalPosts, popularTags] = await Promise.all([
-            Post.find({ status: 'published', topicCluster: cluster })
+            Post.find({ status: 'published', topicCluster: clusterRegex })
                 .select('slug title tldr tags topicCluster publishTime featuredImage imageAlt')
                 .sort({ publishTime: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            Post.countDocuments({ status: 'published', topicCluster: cluster }),
+            Post.countDocuments({ status: 'published', topicCluster: clusterRegex }),
             getPopularTags()
         ]);
 
         const totalPages = Math.ceil(totalPosts / limit);
 
+        // Normalize display name
+        const displayCluster = ['usa', 'uk', 'eu'].includes(cluster.toLowerCase())
+            ? cluster.toUpperCase()
+            : cluster.charAt(0).toUpperCase() + cluster.slice(1).toLowerCase();
+
         res.render('topic', {
-            title: `${cluster} Geopolitics Coverage | GeoPolitiq`,
+            title: `${displayCluster} Geopolitics Coverage | GeoPolitiq`,
             seo: buildPageSEO({
                 type: 'topic',
-                title: cluster,
-                description: `In-depth geopolitical coverage, news, and analysis about ${cluster}. Expert insights from GeoPolitiq.`,
+                title: displayCluster,
+                description: `In-depth geopolitical coverage, news, and analysis about ${displayCluster}. Expert insights from GeoPolitiq.`,
                 url: `/topic/${cluster}`
             }),
-            cluster,
+            cluster: displayCluster,
             posts,
             popularTags,
             currentPage: page,
