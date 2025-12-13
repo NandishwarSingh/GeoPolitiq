@@ -128,6 +128,17 @@
         let hasMore = sentinel.dataset.hasMore === 'true';
         const cluster = sentinel.dataset.cluster;
 
+        // Collect all initially displayed slugs to prevent duplicates
+        function getDisplayedSlugs() {
+            return [...topicGrid.querySelectorAll('.tag-card')]
+                .map(a => {
+                    const href = a.getAttribute('href') || '';
+                    return href.replace('/post/', '');
+                })
+                .filter(Boolean);
+        }
+        let displayedSlugs = getDisplayedSlugs();
+
         function createPostHTML(post) {
             const imgHtml = post.featuredImage
                 ? `<div class="tag-card-image"><img src="${post.featuredImage}" alt="${post.imageAlt || post.title}" loading="lazy"></div>`
@@ -163,12 +174,17 @@
             sentinel.style.display = 'flex';
 
             try {
-                const response = await fetch(`/api/topic/${encodeURIComponent(cluster)}?page=${currentPage}&limit=5`);
+                const excludeParam = displayedSlugs.length > 0 ? `&exclude=${displayedSlugs.join(',')}` : '';
+                const response = await fetch(`/api/topic/${encodeURIComponent(cluster)}?page=${currentPage}&limit=5${excludeParam}`);
                 const data = await response.json();
 
                 if (data.posts && data.posts.length > 0) {
                     data.posts.forEach(post => {
-                        topicGrid.insertAdjacentHTML('beforeend', createPostHTML(post));
+                        // Skip if already displayed (double-check)
+                        if (!displayedSlugs.includes(post.slug)) {
+                            topicGrid.insertAdjacentHTML('beforeend', createPostHTML(post));
+                            displayedSlugs.push(post.slug);
+                        }
                     });
                     currentPage++;
                     hasMore = data.hasMore;

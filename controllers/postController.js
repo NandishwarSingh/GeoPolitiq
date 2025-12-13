@@ -582,7 +582,7 @@ exports.getTagPostsApi = async (req, res) => {
 
 /**
  * GET /api/topic/:cluster - JSON API for topic posts infinite scroll
- * Query params: page (default 1), limit (default 5)
+ * Query params: page (default 1), limit (default 5), exclude (comma-separated slugs)
  */
 exports.getTopicPostsApi = async (req, res) => {
     try {
@@ -591,17 +591,27 @@ exports.getTopicPostsApi = async (req, res) => {
         const limit = parseInt(req.query.limit) || 5;
         const skip = (page - 1) * limit;
 
+        // Parse excluded slugs to prevent duplicates
+        const excludeSlugs = req.query.exclude
+            ? req.query.exclude.split(',').filter(Boolean)
+            : [];
+
         // Case-insensitive regex to match variations like GLOBAL/Global/global
         const clusterRegex = new RegExp(`^${cluster}$`, 'i');
 
+        const query = { status: 'published', topicCluster: clusterRegex };
+        if (excludeSlugs.length > 0) {
+            query.slug = { $nin: excludeSlugs };
+        }
+
         const [posts, totalPosts] = await Promise.all([
-            Post.find({ status: 'published', topicCluster: clusterRegex })
+            Post.find(query)
                 .select('slug title tldr tags topicCluster publishTime featuredImage imageAlt')
                 .sort({ publishTime: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            Post.countDocuments({ status: 'published', topicCluster: clusterRegex })
+            Post.countDocuments(query)
         ]);
 
         const totalPages = Math.ceil(totalPosts / limit);
