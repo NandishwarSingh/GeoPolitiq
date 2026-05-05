@@ -1,5 +1,7 @@
 # GeoPolitiq 🌍
 
+**Live:** [geopolitiq.com](https://geopolitiq.com/)
+
 A geopolitics intelligence platform combining Wikipedia's authoritative content style with Google News' dynamic feed presentation. Features AI-powered content generation, push notifications, and a newspaper-inspired design.
 
 ## ✨ Features (What We Have)
