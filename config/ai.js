@@ -40,6 +40,15 @@ const MODELS = {
         outputPrice: 15,
         hasWebSearch: true,
         dailyCostINR: 84
+    },
+    "gemini-3-flash": {
+        id: "google/gemini-3-flash-preview:online",
+        name: "Gemini 3 Flash (web search)",
+        description: "Latest Gemini Flash with OpenRouter web grounding (:online).",
+        inputPrice: 0.075,
+        outputPrice: 0.3,
+        hasWebSearch: true,
+        dailyCostINR: 4
     }
 };
 
@@ -71,7 +80,7 @@ module.exports = {
     // Scheduler settings
     scheduler: {
         enabled: process.env.AI_SCHEDULER_ENABLED === 'true',
-        cronExpression: '0 */2 * * *',
+        cronExpression: process.env.AI_SCHEDULER_CRON || '0 */6 * * *',
         postsPerRun: 5,
         maxDailyPosts: 50
     },

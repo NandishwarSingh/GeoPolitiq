@@ -135,138 +135,14 @@ const BLOCKED_DOMAINS = [
 /**
  * Validate if an image URL is accessible and returns actual image content
  */
-async function validateImageUrl(imageUrl) {
-    try {
-        // Skip blocked domains
-        for (const domain of BLOCKED_DOMAINS) {
-            if (imageUrl.includes(domain)) {
-                return false;
-            }
-        }
-
-        // Make HEAD request to check if image is accessible
-        const response = await axios.head(imageUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'image/*'
-            },
-            timeout: 5000,
-            maxRedirects: 3
-        });
-
-        // Check status code
-        if (response.status !== 200) {
-            return false;
-        }
-
-        // Check content type is an image
-        const contentType = response.headers['content-type'] || '';
-        if (!contentType.startsWith('image/')) {
-            return false;
-        }
-
-        // Check content length (should be at least 5KB to be a real image)
-        const contentLength = parseInt(response.headers['content-length'] || '0', 10);
-        if (contentLength > 0 && contentLength < 5000) {
-            return false; // Too small, likely a placeholder
-        }
-
-        return true;
-    } catch (error) {
-        return false;
-    }
+// Image search now lives in ./imageSearch.js
+const { searchNewsImage: __searchNewsImage } = require('./imageSearch');
+async function searchNewsImage(title, sourceUrl) {
+    const result = await __searchNewsImage(title, sourceUrl);
+    return result.url;
 }
-
-/**
- * Search for a relevant news image using Google Images scraping
- * Validates each image before returning
- */
-async function searchNewsImage(title) {
-    try {
-        // Clean up title for search query
-        const searchQuery = title
-            .replace(/[!?'"]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .substring(0, 60);
-
-        console.log(`[AI] 🔍 Searching images for: "${searchQuery}"`);
-
-        // Use Google Images search
-        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=isch&safe=active`;
-
-        const response = await axios.get(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5'
-            },
-            timeout: 15000
-        });
-
-        const html = response.data;
-
-        // Extract image URLs
-        const pattern = /\["(https:\/\/[^"]+\.(?:jpg|jpeg|png|webp))[^"]*",\d+,\d+\]/gi;
-        const matches = [...html.matchAll(pattern)];
-
-        // Try up to 10 images, validate each one
-        for (const match of matches.slice(0, 10)) {
-            const imageUrl = match[1];
-
-            if (!imageUrl ||
-                !imageUrl.startsWith('https://') ||
-                imageUrl.includes('google.com') ||
-                imageUrl.includes('gstatic.com') ||
-                imageUrl.length > 500) {
-                continue;
-            }
-
-            console.log(`[AI] 🔄 Validating: ${imageUrl.substring(0, 60)}...`);
-
-            const isValid = await validateImageUrl(imageUrl);
-            if (isValid) {
-                console.log(`[AI] ✅ Valid image found!`);
-                return imageUrl;
-            } else {
-                console.log(`[AI] ❌ Image blocked/invalid, trying next...`);
-            }
-        }
-
-        console.log('[AI] ⚠️ No valid images found, using Pexels fallback');
-        return getDefaultImage(title);
-
-    } catch (error) {
-        console.error(`[AI] Image search failed: ${error.message}`);
-        return getDefaultImage(title);
-    }
-}
-
-/**
- * Default fallback image based on topic
- */
-function getDefaultImage(title) {
-    const text = (title || '').toLowerCase();
-
-    // Simple topic-based fallbacks using Pexels (guaranteed to work)
-    if (text.includes('trump') || text.includes('biden') || text.includes('usa') || text.includes('america')) {
-        return 'https://images.pexels.com/photos/1202723/pexels-photo-1202723.jpeg?w=1280';
-    }
-    if (text.includes('india') || text.includes('modi')) {
-        return 'https://images.pexels.com/photos/789750/pexels-photo-789750.jpeg?w=1280';
-    }
-    if (text.includes('uk') || text.includes('britain') || text.includes('starmer')) {
-        return 'https://images.pexels.com/photos/77171/pexels-photo-77171.jpeg?w=1280';
-    }
-    if (text.includes('russia') || text.includes('putin') || text.includes('ukraine')) {
-        return 'https://images.pexels.com/photos/3617500/pexels-photo-3617500.jpeg?w=1280';
-    }
-    if (text.includes('china') || text.includes('xi')) {
-        return 'https://images.pexels.com/photos/2770933/pexels-photo-2770933.jpeg?w=1280';
-    }
-
-    // Default world/politics image
-    return 'https://images.pexels.com/photos/1098460/pexels-photo-1098460.jpeg?w=1280';
+async function searchNewsImageWithSource(title, sourceUrl) {
+    return await __searchNewsImage(title, sourceUrl);
 }
 
 /**
@@ -274,105 +150,86 @@ function getDefaultImage(title) {
  * Uses Perplexity Sonar Pro for web search to get TODAY's news
  */
 function buildPrompt(existingTitles = [], avoidKeywords = [], priorityClusters = [], skipAvoidSection = false) {
-    // Build avoid section with titles AND keywords
-    let avoidSection = '';
+    let avoidSection = "";
     if (!skipAvoidSection && (existingTitles.length > 0 || avoidKeywords.length > 0)) {
         const titlePart = existingTitles.length > 0
-            ? `\n**RECENTLY COVERED TOPICS (find DIFFERENT stories):**\n${existingTitles.slice(0, 10).map((t, i) => `${i + 1}. ${t}`).join('\n')}`
-            : '';
-
+            ? `\n**ALREADY COVERED — find different topics:**\n${existingTitles.slice(0, 10).map((t, i) => `${i + 1}. ${t}`).join("\n")}`
+            : "";
         const keywordPart = avoidKeywords.length > 0
-            ? `\n**OVERUSED KEYWORDS (avoid stories focused on these):** ${avoidKeywords.slice(0, 15).join(', ')}`
-            : '';
-
-        avoidSection = titlePart + keywordPart + '\n\nIMPORTANT: Find stories about DIFFERENT people, events, or topics. Do NOT cover the same news with slightly different wording.';
+            ? `\n**Overused keywords to avoid:** ${avoidKeywords.slice(0, 15).join(", ")}`
+            : "";
+        avoidSection = titlePart + keywordPart;
     }
 
-    // Build priority section
     const prioritySection = priorityClusters.length > 0
-        ? `\n**PRIORITY REGIONS (need more coverage):** ${priorityClusters.join(', ')} - Try to include at least one story from these regions.`
-        : '';
+        ? `\n**Priority regions (need more coverage):** ${priorityClusters.join(", ")} — try to include at least one story from these.`
+        : "";
 
     const now = new Date();
-    const todayFormatted = now.toLocaleDateString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    const todayFormatted = now.toLocaleDateString("en-US", {
+        weekday: "long", year: "numeric", month: "long", day: "numeric"
     });
-    const dateISO = now.toISOString().split('T')[0];
+    const dateISO = now.toISOString().split("T")[0];
 
-    return `You are a professional news journalist API. Today is ${todayFormatted} (${dateISO}).
+    return `You are a senior geopolitics analyst writing for GeoPolitiq, a publication that explains why news matters — not a breaking-news ticker. Today is ${todayFormatted} (${dateISO}).
 
-**CRITICAL - READ THIS FIRST:**
-- You MUST return a valid JSON array. This is NON-NEGOTIABLE.
-- Do NOT explain, apologize, or say you cannot do something.
-- Do NOT start your response with "I cannot", "I'm unable", "Unfortunately", etc.
-- If you cannot find perfect matches, find the CLOSEST available news stories.
-- ALWAYS output at least 3-5 articles as a JSON array.
-- Your ONLY valid response format is: [{"title": "...", ...}, {"title": "...", ...}]
+**HARD ANTI-HALLUCINATION RULES — VIOLATING ANY OF THESE WILL CAUSE YOUR ARTICLE TO BE DELETED BY THE FACT-CHECKER:**
+1. Use ONLY facts that appear in your web search results. If something is not in the search results, do NOT mention it.
+2. NEVER invent timestamps ("at 3:45 PM"), exact dollar/euro/rupee amounts, vote tallies, casualty counts, or quotes. If your search did not return that specific number or quote, omit it.
+3. If your search did not return a story for a region, SKIP that region — do not invent one to fill the slot.
+4. Prefer recent (last 7 days) reporting over claiming events happened "today". Use phrases like "this week", "in recent days", "according to a Reuters report from {date in search results}".
+5. Do NOT predict election results, court rulings, summit outcomes, or other events that have not happened yet. Future-tense events MUST be framed as forecasts, not as facts that already occurred.
+6. If a search result contradicts what you were going to write, follow the search result.
 
-**OUTPUT FORMAT: JSON ARRAY ONLY**
-- Return ONLY valid JSON starting with [ and ending with ]
-- No explanations, no markdown code blocks, no text before/after JSON
-- If search results are limited, write about available stories
+**WHAT GEOPOLITIQ ARTICLES LOOK LIKE (style guide):**
+GeoPolitiq publishes analytical context pieces, not headlines. Examples of titles that fit:
+- "Why the Strait of Malacca still defines Indo-Pacific strategy"
+- "The rare-earth bottleneck: mining vs. processing as the real chokepoint"
+- "Russia–EU energy: how a 50-year partnership unwound in 18 months"
+- "Semiconductor geography after the CHIPS Act"
+Each piece grounds itself in a recent development, then explains the structural forces behind it.
 
-**DATE REQUIREMENT: TODAY (${dateISO})**
-- Search for news published TODAY
-- Include specific dates, times, and sources in your articles
+**REGIONS — find ONE recent (last 7 days) story per region. SKIP a region if no real news exists; do not fabricate.**
+1. USA, 2. INDIA, 3. UK, 4. EU, 5. GLOBAL
 
-**REGIONS (one article each, find what's available):**
-1. USA - Politics, economy, tech, sports, or major US news
-2. INDIA - Politics, cricket, Bollywood, economy, or major India news  
-3. UK - Politics, royals, sports, or major UK news
-4. EU - European affairs, economy, or major EU news
-5. GLOBAL - International affairs, UN, climate, space, or world news
+**ARTICLE STRUCTURE (use exactly this format):**
+## What happened
+A 2–3 sentence factual summary of the recent event, citing the source by name.
 
-If a region has no news today, substitute with another interesting story from any region.
+## Why it matters
+The structural geopolitical or economic context: what underlying force does this event illustrate?
 
-**ARTICLE QUALITY REQUIREMENTS:**
-- Write like a REAL journalist, not AI
-- Use EXACT quotes, names, numbers, dates from your search
-- Include specific details: "At 3:45 PM local time...", "According to Reuters..."
-- No vague language like "sources say" without naming the source
-
-**CONTENT STRUCTURE (use this exact format):**
-## Overview
-Brief context with specific facts from today's news
-
-## Key Developments
-- Bullet points with exact quotes and data
-- "Official Name said: 'exact quote here'"
-- Include timestamps and locations
+## Key facts
+- Bullet points with verified data only
+- Cite source for any number you include: "(Reuters, ${dateISO})"
+- Do not include numbers you cannot source
 
 ## Analysis
-| Factor | Current Status | Implications |
-|--------|----------------|--------------|
-| Economic | Specific data | Impact |
-| Political | Key players | Consequences |
-| Social | Public reaction | Outlook |
+Two short paragraphs (~150 words total) connecting this event to broader strategic dynamics.
 
-## Expert Reactions
-Direct quotes from named officials, analysts, or stakeholders
+## What to watch
+2–3 concrete forward-looking signals (deadlines, scheduled meetings, indicators) — clearly labelled as forecasts, not facts.
 
-## What's Next
-Concrete next steps with dates if available
-
-**JSON FORMAT (return exactly this structure):**
+**OUTPUT — return ONLY a valid JSON array, nothing else:**
 [
   {
-    "title": "Specific headline with key name/number (60-90 chars)",
-    "tldr": "One-sentence summary with key fact (150-200 chars)",
-    "metaTitle": "SEO-optimized title for search engines (50-60 chars, include key terms)",
-    "metaDescription": "Compelling search snippet with call-to-action (150-160 chars)",
-    "content": "Full 1000+ word article following structure above",
-    "tags": ["specific", "relevant", "tags", "for", "article"],
-    "topicCluster": "USA",
-    "authorName": "Author name or 'Staff' if not available",
-    "authorOrg": "Source organization (Reuters, AP, BBC, etc.)",
-    "sourceUrl": "URL to original article",
+    "title": "Analytical headline (60–90 chars). NOT a fake breaking-news headline.",
+    "tldr": "One sentence on what's happening and why it matters (150–200 chars).",
+    "metaTitle": "SEO title (50–60 chars).",
+    "metaDescription": "Search snippet (150–160 chars).",
+    "content": "Full ~800–1200 word article following the structure above. Markdown headings allowed.",
+    "tags": ["topic-tag", "region-tag", "specific-tag"],
+    "topicCluster": "USA | INDIA | UK | EU | GLOBAL",
+    "authorName": "Staff",
+    "authorOrg": "GeoPolitiq",
+    "sourceUrl": "URL of the primary source from your search results",
     "imageUrl": "",
     "imageSource": "",
     "imageAlt": ""
   }
 ]
+
+If you have only 3 well-sourced stories, return 3. Quality over quantity. Better to return 2 articles you can fully source than 5 that include invented details.
 ${avoidSection}
 ${prioritySection}
 
@@ -403,11 +260,10 @@ function rotateApiKey() {
 }
 
 /**
- * Get current model - Use Perplexity Sonar Pro for real-time news
+ * Get current model — uses aiConfig.primaryModel which is driven by AI_MODEL env.
  */
 function getCurrentModel() {
-    // Force Perplexity Sonar Pro for real-time web search news
-    return 'perplexity/sonar-pro';
+    return aiConfig.primaryModel;
 }
 
 /**
@@ -437,7 +293,7 @@ function sleep(ms) {
 /**
  * Call OpenRouter API with PERSISTENT RETRY until success
  */
-async function callOpenRouter(prompt) {
+async function callOpenRouter(prompt, sonarOptions = {}) {
     let retryCount = 0;
     const maxRetries = 100;
     let lastError = null;
@@ -449,19 +305,28 @@ async function callOpenRouter(prompt) {
         console.log(`[AI] Attempt ${retryCount + 1}: Calling ${model.split('/').pop()} `);
 
         try {
+            const payload = {
+                model: model,
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.5,
+                max_tokens: sonarOptions.max_tokens || 8000,
+            };
+            // Merge Perplexity Sonar / web-search params if provided
+            for (const key of [
+                'search_recency_filter',
+                'search_after_date_filter',
+                'search_before_date_filter',
+                'search_domain_filter',
+                'return_images',
+                'return_citations',
+                'return_related_questions',
+                'web_search_options',
+            ]) {
+                if (sonarOptions[key] !== undefined) payload[key] = sonarOptions[key];
+            }
             const response = await axios.post(
                 aiConfig.baseUrl,
-                {
-                    model: model,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 16000 // Increased for longer content
-                },
+                payload,
                 {
                     headers: aiConfig.getHeaders(apiKey),
                     timeout: 120000 // 2 minute timeout for longer content
@@ -478,7 +343,13 @@ async function callOpenRouter(prompt) {
             lastError = error;
             console.error(`[AI] Attempt ${retryCount + 1} failed: `, error.message);
 
-            if (error.response?.status === 429) {
+            const status = error.response?.status;
+            // Auth / quota / spend-cap errors — no point retrying, bail out.
+            if (status === 401 || status === 402 || status === 403) {
+                console.error('[AI] Hard auth/quota error ' + status + ', giving up');
+                throw error;
+            }
+            if (status === 429) {
                 const waitTime = Math.min(5000 + (retryCount * 2000), 30000);
                 console.log(`[AI] Rate limited.Waiting ${waitTime / 1000}s...`);
                 rotateApiKey();
@@ -661,46 +532,214 @@ async function getExistingPostData() {
     return { titles, sourceUrls, keywords: topKeywords };
 }
 
+const SONAR_REGIONS = [
+    {
+        key: 'USA',
+        label: 'United States',
+        location: { country: 'US' },
+        domains: [
+            'reuters.com', 'apnews.com', 'nytimes.com', 'wsj.com', 'politico.com',
+            'bloomberg.com', 'washingtonpost.com', 'foreignaffairs.com', 'foreignpolicy.com',
+            'theatlantic.com', 'axios.com', 'cnbc.com', 'npr.org', 'defenseone.com',
+            'breakingdefense.com',
+        ],
+    },
+    {
+        key: 'EUROPE',
+        label: 'Europe / EU',
+        location: { country: 'BE' },
+        domains: [
+            'ft.com', 'economist.com', 'politico.eu', 'lemonde.fr', 'spiegel.de',
+            'theguardian.com', 'dw.com', 'euronews.com', 'reuters.com', 'lefigaro.fr',
+            'irishtimes.com', 'elpais.com', 'tagesspiegel.de', 'swissinfo.ch',
+            'brusselstimes.com',
+        ],
+    },
+    {
+        key: 'INDIA',
+        label: 'India',
+        location: { country: 'IN' },
+        domains: [
+            'thehindu.com', 'indianexpress.com', 'livemint.com', 'theprint.in', 'thewire.in',
+            'reuters.com', 'bbc.com', 'ndtv.com', 'hindustantimes.com', 'indiatoday.in',
+            'business-standard.com', 'economictimes.indiatimes.com', 'deccanherald.com',
+            'firstpost.com', 'scroll.in',
+        ],
+    },
+    {
+        key: 'UK',
+        label: 'United Kingdom',
+        location: { country: 'GB' },
+        domains: [
+            'bbc.com', 'theguardian.com', 'ft.com', 'telegraph.co.uk', 'thetimes.co.uk',
+            'independent.co.uk', 'economist.com', 'news.sky.com', 'spectator.co.uk',
+            'newstatesman.com', 'standard.co.uk', 'channel4.com', 'reuters.com',
+            'prospectmagazine.co.uk', 'politico.eu',
+        ],
+    },
+    {
+        key: 'MIDDLE_EAST',
+        label: 'Middle East / Gulf',
+        location: { country: 'AE' },
+        domains: [
+            'aljazeera.com', 'thenationalnews.com', 'arabnews.com', 'gulfnews.com',
+            'jpost.com', 'timesofisrael.com', 'haaretz.com', 'al-monitor.com',
+            'middleeastmonitor.com', 'asharq.com', 'gulf-times.com', 'reuters.com',
+            'bbc.com', 'ft.com', 'alarabiya.net',
+        ],
+    },
+];
+
+function buildRegionPrompt(region, existingTitles = [], avoidKeywords = []) {
+    const now = new Date();
+    const todayFormatted = now.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const dateISO = now.toISOString().split('T')[0];
+
+    const avoidPart = existingTitles.length > 0
+        ? `\n**ALREADY COVERED — find a DIFFERENT story:**\n${existingTitles.slice(0, 8).map((t, i) => `${i + 1}. ${t}`).join('\n')}`
+        : '';
+    const kwPart = avoidKeywords.length > 0
+        ? `\n**Overused keywords to avoid:** ${avoidKeywords.slice(0, 12).join(', ')}`
+        : '';
+
+    return `You are a senior geopolitics analyst writing for GeoPolitiq. Today is ${todayFormatted} (${dateISO}).
+
+**FOCUS REGION FOR THIS CALL: ${region.label}**
+
+Find ONE recent (last 24 hours) story from this region that has geopolitical significance. The web search has been domain-restricted to credible outlets and date-restricted to the last day; use ONLY what those results actually contain.
+
+**HARD ANTI-HALLUCINATION RULES — VIOLATING ANY OF THESE WILL CAUSE THE FACT-CHECKER TO DELETE YOUR ARTICLE:**
+1. Use ONLY facts that appear in your web search results.
+2. NEVER invent timestamps, dollar/euro/rupee amounts, vote tallies, casualty counts, or quotes.
+3. If your search returned nothing usable for this region, return an empty JSON array []. Do NOT fabricate to fill the slot.
+4. Do NOT predict election results, court rulings, summit outcomes, or events that have not happened yet.
+
+**STYLE — analytical context, not breaking-news ticker.**
+Examples of titles that fit:
+- "Why the Strait of Malacca still defines Indo-Pacific strategy"
+- "Russia–EU energy: how a 50-year partnership unwound in 18 months"
+- "Semiconductor geography after the CHIPS Act"
+
+**ARTICLE STRUCTURE (markdown):**
+## What happened
+2–3 factual sentences citing a source by name.
+
+## Why it matters
+The structural geopolitical/economic context.
+
+## Key facts
+- Verified data only, sourced inline like "(Reuters, ${dateISO})"
+
+## Analysis
+Two short paragraphs (~150 words) connecting to broader strategic dynamics.
+
+## What to watch
+2–3 forward-looking signals labelled as forecasts, not facts.
+
+**OUTPUT — return ONLY a valid JSON array containing exactly ONE article (or [] if no usable story):**
+[
+  {
+    "title": "Analytical headline (60–90 chars)",
+    "tldr": "One-sentence summary (150–200 chars)",
+    "metaTitle": "SEO title (50–60 chars)",
+    "metaDescription": "Search snippet (150–160 chars)",
+    "content": "Full ~800–1200 word article with the structure above",
+    "tags": ["region-tag", "topic-tag", "specific-tag"],
+    "topicCluster": "${region.key}",
+    "authorName": "Staff",
+    "authorOrg": "GeoPolitiq",
+    "sourceUrl": "URL of the primary source from your search results",
+    "imageUrl": "",
+    "imageSource": "",
+    "imageAlt": ""
+  }
+]
+${avoidPart}${kwPart}
+
+START YOUR RESPONSE WITH [ — NO OTHER TEXT.`;
+}
+
+function yesterdayMMDDYYYY() {
+    const d = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}/${dd}/${d.getFullYear()}`;
+}
+
+async function generateForRegion(region, existingTitles, avoidKeywords) {
+    const prompt = buildRegionPrompt(region, existingTitles, avoidKeywords);
+    const sonarOptions = {
+        max_tokens: 6000,
+        search_recency_filter: 'day',
+        search_after_date_filter: yesterdayMMDDYYYY(),
+        search_domain_filter: region.domains,
+        return_images: true,
+        return_citations: true,
+        web_search_options: {
+            search_context_size: 'low',
+            user_location: region.location,
+        },
+    };
+    try {
+        const text = await callOpenRouter(prompt, sonarOptions);
+        const posts = parseResponse(text);
+        for (const p of posts) {
+            if (!p.topicCluster) p.topicCluster = region.key;
+        }
+        return posts;
+    } catch (err) {
+        console.error(`[AI] Region ${region.key} failed: ${err.message}`);
+        return [];
+    }
+}
+
 /**
  * Generate posts using AI
  * Includes retry mechanism and passes deduplication data to save function
  */
-async function generatePosts() {
-    console.log('[AI] Starting post generation...');
+function pickBatchKeys() {
+    // Europe is always in; rotate the second region across all 4 non-EU regions.
+    // Slot 0 (00:00 UTC) -> EUROPE + USA
+    // Slot 1 (06:00 UTC) -> EUROPE + INDIA
+    // Slot 2 (12:00 UTC) -> EUROPE + UK
+    // Slot 3 (18:00 UTC) -> EUROPE + MIDDLE_EAST
+    const slot = Math.floor(new Date().getUTCHours() / 6) % 4;
+    const partner = ['USA', 'INDIA', 'UK', 'MIDDLE_EAST'][slot];
+    return ['EUROPE', partner];
+}
 
-    // Get existing post data for deduplication
+async function generatePosts() {
+    console.log('[AI] Starting region-targeted post generation...');
+
     const existingData = await getExistingPostData();
     console.log(`[AI] Found ${existingData.titles.length} existing posts to check against`);
-    console.log(`[AI] Top keywords to avoid: ${existingData.keywords.slice(0, 10).join(', ')}`);
 
-    // Get priority clusters for balanced coverage
-    const priorityClusters = await getClusterPriorities();
+    const batchKeys = pickBatchKeys();
+    const batch = SONAR_REGIONS.filter((r) => batchKeys.includes(r.key));
+    console.log(`[AI] Batch this run: ${batchKeys.join(' + ')}`);
 
-    // First attempt: with avoid section and priority clusters
-    try {
-        const prompt = buildPrompt(existingData.titles, existingData.keywords, priorityClusters, false);
-        const responseText = await callOpenRouter(prompt);
-        const posts = parseResponse(responseText);
-
-        if (posts.length > 0) {
-            return { posts, existingData };
-        }
-        console.log('[AI] First attempt returned 0 posts, retrying without avoid section...');
-    } catch (error) {
-        console.log(`[AI] First attempt failed: ${error.message}`);
-        console.log('[AI] Retrying without avoid section...');
+    const aggregated = [];
+    for (const region of batch) {
+        console.log(`[AI] -> Region ${region.key} (${region.domains.length} domains, location=${region.location.country})`);
+        const posts = await generateForRegion(region, existingData.titles, existingData.keywords);
+        console.log(`[AI]    region ${region.key} returned ${posts.length} post(s)`);
+        for (const p of posts) aggregated.push(p);
+        await sleep(800);
     }
 
-    // Second attempt: without avoid section (fresh stories)
-    try {
-        const freshPrompt = buildPrompt([], [], priorityClusters, true);
-        const responseText = await callOpenRouter(freshPrompt);
-        const posts = parseResponse(responseText);
-        return { posts, existingData };
-    } catch (error) {
-        console.error('[AI] Second attempt also failed:', error.message);
-        throw error;
+    // De-dupe by title slug to avoid duplicate cross-prints
+    const seen = new Set();
+    const deduped = [];
+    for (const p of aggregated) {
+        const k = (p.title || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        deduped.push(p);
     }
+    console.log(`[AI] Aggregated ${aggregated.length} -> deduped ${deduped.length} posts across ${batch.length} regions`);
+    return { posts: deduped, existingData };
 }
 
 /**
@@ -745,8 +784,15 @@ async function saveGeneratedPosts(posts, existingData = { titles: [], sourceUrls
             }
 
             // Use reliable Pexels image based on topic
-            const featuredImage = await searchNewsImage(postData.title);
-            const imageSource = 'Pexels';
+            const __img = await searchNewsImageWithSource(postData.title, postData.sourceUrl || '');
+            const featuredImage = __img.url;
+            const imageSource = (
+                __img.source === 'source-og'   ? (postData.authorOrg || 'Source') :
+                __img.source === 'google'      ? 'Web (via Google Images)' :
+                __img.source === 'duckduckgo'  ? 'Web (via DuckDuckGo)' :
+                __img.source === 'wikimedia'   ? 'Wikimedia Commons' :
+                'Pexels'
+            );
 
             // Sanitize tables and convert markdown to HTML
             const cleanContent = sanitizeTables(postData.content || '');
@@ -866,7 +912,13 @@ async function testConnection() {
         } catch (error) {
             console.error(`[AI] Attempt ${retryCount + 1} failed:`, error.message);
 
-            if (error.response?.status === 429) {
+            const status = error.response?.status;
+            // Auth / quota / spend-cap errors — no point retrying, bail out.
+            if (status === 401 || status === 402 || status === 403) {
+                console.error('[AI] Hard auth/quota error ' + status + ', giving up');
+                throw error;
+            }
+            if (status === 429) {
                 const waitTime = 5000 + (retryCount * 2000);
                 rotateApiKey();
                 await sleep(waitTime);
