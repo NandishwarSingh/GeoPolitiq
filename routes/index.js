@@ -15,6 +15,8 @@ router.get('/sitemap-static.xml', sitemapController.getStaticSitemap);
 router.get('/sitemap-tags.xml', sitemapController.getTagsSitemap);
 router.get('/sitemap-news.xml', sitemapController.getNewsSitemap);
 router.get('/llms-full.txt', llmController.getFullContext);
+// /llms.txt — short alias to the standard well-known location
+router.get('/llms.txt', (req, res) => res.redirect(301, '/.well-known/llms.txt'));
 
 // ═══════════════════════════════════════════════════════════
 // RSS FEED ROUTES
@@ -23,6 +25,7 @@ router.get('/llms-full.txt', llmController.getFullContext);
 router.get('/rss', rssController.getMainFeed);
 router.get('/rss.xml', rssController.getMainFeed);
 router.get('/feed', rssController.getMainFeed);
+router.get('/feed.xml', rssController.getMainFeed);
 router.get('/rss/tag/:tag', rssController.getTagFeed);
 router.get('/rss/topic/:topic', rssController.getTopicFeed);
 

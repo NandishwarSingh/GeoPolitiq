@@ -35,7 +35,7 @@ function formatRFC822Date(date) {
  * Generate a single RSS item from a post
  */
 function generateItem(post) {
-    const link = `${SITE_URL}/post/${post.slug}`;
+    const link = `${SITE_URL}/post/${post.slug}?utm_source=rss&utm_medium=feed&utm_campaign=auto_distribution`;
     const pubDate = formatRFC822Date(post.publishTime || post.createdAt);
 
     // Categories from tags

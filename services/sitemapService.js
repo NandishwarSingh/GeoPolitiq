@@ -227,16 +227,18 @@ async function generateClustersSitemap() {
  * Only includes posts from last 48 hours (Google News requirement)
  */
 async function generateNewsSitemap() {
-  // Google News requires articles from last 48 hours
-  const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  // Google News only indexes <news:news> entries from the last 48 hours.
+  // We always emit <url> entries for the most recent 50 published posts so
+  // the sitemap is never blank, and only attach <news:news> markup to those
+  // that fall inside the freshness window — this stays valid both as a
+  // Google News sitemap and as a regular sitemap.
+  const FRESH_WINDOW_HOURS = 48;
+  const cutoff = new Date(Date.now() - FRESH_WINDOW_HOURS * 60 * 60 * 1000);
 
-  const posts = await Post.find({
-    status: 'published',
-    publishTime: { $gte: twoDaysAgo }
-  })
+  const posts = await Post.find({ status: 'published' })
     .select('title slug publishTime tags topicCluster')
     .sort({ publishTime: -1 })
-    .limit(1000)
+    .limit(50)
     .lean();
 
   let xml = xmlHeader();
@@ -244,21 +246,31 @@ async function generateNewsSitemap() {
   xml += ' xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">';
 
   for (const post of posts) {
-    const pubDate = new Date(post.publishTime).toISOString();
+    const publishDate = post.publishTime ? new Date(post.publishTime) : null;
+    const isFresh = publishDate && publishDate >= cutoff;
+    const lastmod = publishDate ? publishDate.toISOString().split('T')[0] : '';
     const keywords = post.tags ? post.tags.slice(0, 5).join(', ') : '';
 
     xml += `
   <url>
-    <loc>${SITE_URL}/post/${escapeXml(post.slug)}</loc>
+    <loc>${SITE_URL}/post/${escapeXml(post.slug)}</loc>${lastmod ? `
+    <lastmod>${lastmod}</lastmod>` : ''}`;
+
+    if (isFresh) {
+      const pubDateIso = publishDate.toISOString();
+      xml += `
     <news:news>
       <news:publication>
         <news:name>GeoPolitiq</news:name>
         <news:language>en</news:language>
       </news:publication>
-      <news:publication_date>${pubDate}</news:publication_date>
+      <news:publication_date>${pubDateIso}</news:publication_date>
       <news:title>${escapeXml(post.title)}</news:title>${keywords ? `
       <news:keywords>${escapeXml(keywords)}</news:keywords>` : ''}
-    </news:news>
+    </news:news>`;
+    }
+
+    xml += `
   </url>`;
   }
 
