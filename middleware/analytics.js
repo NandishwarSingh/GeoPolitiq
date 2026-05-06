@@ -1,121 +1,138 @@
 /**
  * Analytics Middleware
- * Tracks page views for non-bot visitors with IP deduplication and country detection
+ * Tracks page views for non-bot visitors with IP deduplication and country detection.
+ * Bot rejections are persisted to RejectedView for visibility in the admin dashboard.
  */
 
 const PageView = require('../models/PageView');
+const RejectedView = require('../models/RejectedView');
 const { detectBot } = require('../utils/botDetector');
 const crypto = require('crypto');
-const https = require('https');
 
-// 4 hours in milliseconds
-const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000;
+const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
 
-/**
- * Hash IP address for privacy
- */
 function hashIP(ip) {
     if (!ip) return null;
     return crypto.createHash('sha256').update(ip + 'geopolitiq-salt').digest('hex').substring(0, 16);
 }
 
-/**
- * Get country from IP using ip-api.com (free, no API key needed)
- * Returns country code (e.g., 'India', 'United States') or null
- */
 function getCountryFromIP(ip) {
     return new Promise((resolve) => {
-        // Skip localhost/private IPs
         if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
             resolve('Local');
             return;
         }
-
-        // Clean IP (remove ::ffff: prefix)
         const cleanIP = ip.replace('::ffff:', '');
-
         const url = `http://ip-api.com/json/${cleanIP}?fields=status,country`;
-
         const http = require('http');
-        http.get(url, { timeout: 3000 }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const json = JSON.parse(data);
-                    if (json.status === 'success' && json.country) {
-                        resolve(json.country);
-                    } else {
+        const req = http
+            .get(url, { timeout: 3000 }, (res) => {
+                let data = '';
+                res.on('data', (c) => (data += c));
+                res.on('end', () => {
+                    try {
+                        const json = JSON.parse(data);
+                        resolve(json.status === 'success' && json.country ? json.country : null);
+                    } catch {
                         resolve(null);
                     }
-                } catch {
-                    resolve(null);
-                }
+                });
+            })
+            .on('error', () => resolve(null))
+            .on('timeout', () => {
+                req.destroy();
+                resolve(null);
             });
-        }).on('error', () => resolve(null))
-            .on('timeout', () => resolve(null));
     });
 }
 
-/**
- * Analytics tracking middleware
- * Logs page views with IP deduplication (4 hour window) and country detection
- */
+function classifyReferrer(referer, host) {
+    if (!referer) return 'direct';
+    let url;
+    try {
+        url = new URL(referer);
+    } catch {
+        return 'direct';
+    }
+    const refHost = url.hostname.toLowerCase();
+    if (host && refHost === host.toLowerCase()) return 'internal';
+    if (/google\.|bing\.|duckduckgo\.|yandex\.|baidu\.|brave\.com/.test(refHost)) return 'search';
+    if (/twitter\.com|x\.com|t\.co|facebook\.|instagram\.|linkedin\.|reddit\.|threads\.net|news\.ycombinator/.test(refHost)) {
+        return 'social';
+    }
+    if (/news\.|substack\.|medium\.com/.test(refHost)) return 'news';
+    return 'external';
+}
+
 async function analyticsMiddleware(req, res, next) {
-    // Only track GET requests
-    if (req.method !== 'GET') {
-        return next();
-    }
+    if (req.method !== 'GET') return next();
 
-    // Skip admin and API routes
     const path = req.path;
-    if (path.startsWith('/admin') || path.startsWith('/api')) {
+    if (path.startsWith('/admin') || path.startsWith('/api')) return next();
+    if (/\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|avif|woff|woff2|ttf|eot|map|mp4|webm|xml|txt|json)$/i.test(path)) {
         return next();
     }
 
-    // Skip static assets
-    if (path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i)) {
-        return next();
-    }
-
-    // Run bot detection
-    const { isBot } = detectBot(req);
-    if (isBot) {
-        return next();
-    }
-
-    // Get hashed IP
+    const detection = detectBot(req);
     const ip = req.ip || req.connection.remoteAddress;
     const ipHash = hashIP(ip);
 
-    // Check for duplicate visit within 4 hours
+    if (detection.isBot) {
+        // Persist a rejection record so the admin can see *what* is being filtered.
+        // Country lookup is fire-and-forget so we don't block the response.
+        getCountryFromIP(ip)
+            .then((country) =>
+                RejectedView.create({
+                    path,
+                    timestamp: new Date(),
+                    reason: detection.reason,
+                    ipHash,
+                    country,
+                    userAgent: (req.get('User-Agent') || '').substring(0, 500),
+                    referer: (req.get('Referer') || '').substring(0, 500),
+                })
+            )
+            .catch((err) => console.error('[Analytics] reject-log error:', err.message));
+
+        console.log(
+            `[Analytics] reject ${path} reason=${detection.reason} ua="${(req.get('User-Agent') || '').substring(0, 80)}"`
+        );
+        return next();
+    }
+
+    // ---- Accepted: dedupe by IP within 4 hours ----
     const fourHoursAgo = new Date(Date.now() - DEDUP_WINDOW_MS);
-
     try {
-        const recentVisit = await PageView.findOne({
-            ipHash: ipHash,
-            timestamp: { $gte: fourHoursAgo }
-        }).lean();
+        const recent = await PageView.findOne({ ipHash, timestamp: { $gte: fourHoursAgo } }).lean();
+        if (recent) return next();
 
-        if (recentVisit) {
-            // Already counted this IP in the last 4 hours, skip
-            return next();
-        }
-
-        // Get country asynchronously (don't block)
         const country = await getCountryFromIP(ip);
+        const referer = req.get('Referer') || '';
+        let refSource = classifyReferrer(referer, req.hostname);
 
-        // Log the page view
+        // utm_source overrides referer-based classification when present.
+        // This is how social-app traffic (where Referer is often stripped)
+        // still attributes correctly back to the originating platform.
+        const utmSource = (req.query && typeof req.query.utm_source === 'string')
+            ? req.query.utm_source.toLowerCase().substring(0, 32)
+            : '';
+        if (utmSource) refSource = utmSource;
+
         await PageView.create({
-            path: path,
+            path,
             timestamp: new Date(),
-            ipHash: ipHash,
-            country: country,
-            userAgent: (req.get('User-Agent') || '').substring(0, 500)
+            ipHash,
+            country,
+            userAgent: (req.get('User-Agent') || '').substring(0, 500),
+            referer: referer.substring(0, 500),
+            refSource,
         });
 
-        console.log(`[Analytics] PageView: ${path} | Country: ${country || 'Unknown'} | IP: ${ipHash.substring(0, 8)}...`);
-
+        console.log(
+            `[Analytics] PageView: ${path} | ${country || 'Unknown'} | ${refSource}${
+                referer ? ' (' + referer.substring(0, 60) + ')' : ''
+            }`
+        );
     } catch (err) {
         console.error('[Analytics] Error:', err.message);
     }

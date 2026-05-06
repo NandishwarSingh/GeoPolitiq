@@ -32,6 +32,17 @@ const PageViewSchema = new mongoose.Schema({
         type: String,
         required: false,
         maxlength: 500
+    },
+    referer: {
+        type: String,
+        required: false,
+        maxlength: 500
+    },
+    refSource: {
+        type: String,
+        required: false,
+        enum: ["direct", "internal", "search", "social", "news", "external"],
+        index: true
     }
 }, {
     timestamps: false,

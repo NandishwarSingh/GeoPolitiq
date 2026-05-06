@@ -565,13 +565,47 @@ exports.toggleAiScheduler = (req, res) => {
 exports.showAnalytics = async (req, res) => {
     try {
         const PushSubscription = require('../models/PushSubscription');
+        const RejectedView = require('../models/RejectedView');
 
-        const [stats, countryData, dailyHistory, popularPostsRaw, notificationStats] = await Promise.all([
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        const [
+            stats,
+            countryData,
+            dailyHistory,
+            popularPostsRaw,
+            notificationStats,
+            referrerBreakdownRaw,
+            topReferrersRaw,
+            rejectionBreakdown,
+            recentRejections,
+        ] = await Promise.all([
             PageView.getStats(),
             PageView.getCountryBreakdown(5),
             PageView.getDailyHistory(30),
             PageView.getPopularPosts(10),
-            PushSubscription.getStats()
+            PushSubscription.getStats(),
+            // Referrer source buckets — direct, internal, search, social, news, external
+            PageView.aggregate([
+                { $match: { timestamp: { $gte: sevenDaysAgo } } },
+                { $group: { _id: { $ifNull: ['$refSource', 'unknown'] }, count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+            ]),
+            // Top external referer URLs (unique senders)
+            PageView.aggregate([
+                {
+                    $match: {
+                        timestamp: { $gte: sevenDaysAgo },
+                        refSource: { $in: ['search', 'social', 'news', 'external'] },
+                        referer: { $ne: '' },
+                    },
+                },
+                { $group: { _id: '$referer', count: { $sum: 1 }, source: { $first: '$refSource' } } },
+                { $sort: { count: -1 } },
+                { $limit: 10 },
+            ]),
+            RejectedView.getReasonBreakdown(sevenDaysAgo),
+            RejectedView.getRecent(20),
         ]);
 
         // Enrich popular posts with titles from database
@@ -583,10 +617,21 @@ exports.showAnalytics = async (req, res) => {
         const titleMap = {};
         posts.forEach(p => { titleMap[p.slug] = p.title; });
 
-        const popularPosts = popularPostsRaw.map(p => ({
-            ...p,
-            title: titleMap[p.slug] || p.slug
+        // Drop pageviews for slugs that no longer exist as published posts
+        // (bots and stale crawls hit /post/<random> and the URL appears in raw analytics).
+        const popularPosts = popularPostsRaw
+            .filter(p => titleMap[p.slug])
+            .map(p => ({ ...p, title: titleMap[p.slug] }));
+
+        // Compute totals for the bot-filter widget.
+        const totalRejections7d = rejectionBreakdown.reduce((acc, r) => acc + r.count, 0);
+        const totalReferrerHits = referrerBreakdownRaw.reduce((acc, r) => acc + r.count, 0);
+        const referrerBreakdown = referrerBreakdownRaw.map((r) => ({
+            source: r._id,
+            count: r.count,
+            percentage: totalReferrerHits > 0 ? Math.round((r.count / totalReferrerHits) * 100) : 0,
         }));
+        const topReferrers = topReferrersRaw.map((r) => ({ url: r._id, count: r.count, source: r.source }));
 
         res.render('admin/analytics', {
             title: 'Analytics - Admin',
@@ -596,7 +641,12 @@ exports.showAnalytics = async (req, res) => {
             countryData,
             dailyHistory,
             popularPosts,
-            notificationStats
+            notificationStats,
+            referrerBreakdown,
+            topReferrers,
+            rejectionBreakdown,
+            recentRejections,
+            totalRejections7d,
         });
     } catch (error) {
         console.error('Analytics dashboard error:', error);

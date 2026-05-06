@@ -1,3 +1,27 @@
+
+<%
+  const REF_SOURCE_LABEL = {
+    direct: { label: 'Direct / typed URL', icon: '🌐', color: '#888' },
+    internal: { label: 'Internal navigation', icon: '🔗', color: '#7dd3fc' },
+    search: { label: 'Search engines', icon: '🔍', color: '#4CAF50' },
+    social: { label: 'Social media', icon: '💬', color: '#a78bfa' },
+    news: { label: 'News / blogs', icon: '📰', color: '#fbbf24' },
+    external: { label: 'Other external', icon: '↗️', color: '#f87171' },
+    unknown: { label: 'Unknown', icon: '❓', color: '#666' },
+  };
+  const REJECT_LABEL = {
+    'isbot-dictionary': 'isbot dictionary match',
+    'pattern-match': 'Known scraper pattern',
+    'ua-too-short': 'UA too short / empty',
+    'missing-accept-language': 'No Accept-Language header',
+    'missing-accept-encoding': 'No Accept-Encoding header',
+    'no-html-accept': 'No text/html in Accept',
+    'missing-sec-fetch': 'No Sec-Fetch-* headers',
+    'chrome-without-sec-ch-ua': 'Claims Chrome but no Sec-CH-UA',
+    'browser-version-ancient': 'Ancient browser version',
+    'cold-hit-stale-ua': 'Cold direct hit + stale UA',
+  };
+%>
 <div class="admin-analytics">
     <header class="admin-header">
         <h1>📊 Analytics</h1>
@@ -254,6 +278,94 @@
             <% } else { %>
                 <p class="no-data">No daily data yet.</p>
                 <% } %>
+    </div>
+
+
+    <!-- Referrers -->
+    <div class="referrer-section">
+        <h3>🔗 Referrers (last 7 days)</h3>
+        <% if (referrerBreakdown && referrerBreakdown.length > 0) { %>
+            <div class="referrer-grid">
+                <% referrerBreakdown.forEach(function(r) {
+                     const meta = REF_SOURCE_LABEL[r.source] || REF_SOURCE_LABEL.unknown; %>
+                    <div class="referrer-card">
+                        <span class="referrer-icon"><%= meta.icon %></span>
+                        <div class="referrer-body">
+                            <div class="referrer-row">
+                                <span class="referrer-label"><%= meta.label %></span>
+                                <span class="referrer-count"><%= r.count %></span>
+                            </div>
+                            <div class="referrer-bar">
+                                <div class="referrer-bar-fill"
+                                     style="width: <%= r.percentage %>%; background: <%= meta.color %>;"></div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+            <% if (topReferrers && topReferrers.length > 0) { %>
+                <h4 class="sub-h">Top external referrers</h4>
+                <table class="referrer-table">
+                    <thead>
+                        <tr><th>Source</th><th>URL</th><th>Hits</th></tr>
+                    </thead>
+                    <tbody>
+                        <% topReferrers.forEach(function(r) {
+                             const meta = REF_SOURCE_LABEL[r.source] || REF_SOURCE_LABEL.external; %>
+                            <tr>
+                                <td><span class="src-pill" style="background:<%= meta.color %>33;color:<%= meta.color %>;"><%= meta.icon %> <%= r.source %></span></td>
+                                <td class="url-cell"><a href="<%= r.url %>" target="_blank" rel="noopener noreferrer"><%= r.url %></a></td>
+                                <td class="num-cell"><%= r.count %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
+        <% } else { %>
+            <p class="no-data">No referrer data yet — visit the site from a search engine or social link to populate this.</p>
+        <% } %>
+    </div>
+
+    <!-- Bot filter -->
+    <div class="reject-section">
+        <h3>🤖 Bot filter (last 7 days)</h3>
+        <p class="admin-subtitle">
+            <%= totalRejections7d.toLocaleString() %> requests rejected before they reached the visitor count.
+        </p>
+        <% if (rejectionBreakdown && rejectionBreakdown.length > 0) { %>
+            <div class="reject-summary">
+                <% rejectionBreakdown.forEach(function(r) { %>
+                    <div class="reject-pill">
+                        <span class="reject-label"><%= REJECT_LABEL[r._id] || r._id %></span>
+                        <span class="reject-count"><%= r.count %></span>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <p class="no-data">No rejected requests in the last 7 days.</p>
+        <% } %>
+
+        <% if (recentRejections && recentRejections.length > 0) { %>
+            <h4 class="sub-h">Recent rejections</h4>
+            <div class="table-scroll">
+                <table class="reject-table">
+                    <thead>
+                        <tr><th>When</th><th>Reason</th><th>Path</th><th>Country</th><th>User agent</th></tr>
+                    </thead>
+                    <tbody>
+                        <% recentRejections.forEach(function(r) { %>
+                            <tr>
+                                <td class="when-cell"><%= new Date(r.timestamp).toLocaleString() %></td>
+                                <td><span class="reason-pill"><%= REJECT_LABEL[r.reason] || r.reason %></span></td>
+                                <td class="path-cell"><%= r.path %></td>
+                                <td><%= r.country || '—' %></td>
+                                <td class="ua-cell" title="<%= r.userAgent %>"><%= (r.userAgent || '').substring(0, 70) %><%= (r.userAgent || '').length > 70 ? '…' : '' %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
     </div>
 
     <div class="analytics-info">
@@ -706,5 +818,174 @@
 
     .daily-table tbody tr:hover {
         background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* ---- Referrer widget ---- */
+    .referrer-section,
+    .reject-section {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #1f1f28;
+        border-radius: 12px;
+        border: 1px solid #2a2a3a;
+    }
+    .referrer-section h3,
+    .reject-section h3 {
+        font-size: 1rem;
+        color: #fff;
+        margin: 0 0 1rem;
+    }
+    .referrer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+    }
+    .referrer-card {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        background: #252530;
+        border-radius: 8px;
+        border: 1px solid #2a2a3a;
+    }
+    .referrer-icon {
+        font-size: 1.4rem;
+        line-height: 1;
+    }
+    .referrer-body { flex: 1; min-width: 0; }
+    .referrer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.4rem;
+    }
+    .referrer-label {
+        font-size: 0.82rem;
+        color: #ddd;
+    }
+    .referrer-count {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #fff;
+        font-variant-numeric: tabular-nums;
+    }
+    .referrer-bar {
+        height: 4px;
+        background: #2a2a3a;
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .referrer-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.4s ease;
+    }
+    .sub-h {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #888;
+        margin: 1.5rem 0 0.75rem;
+    }
+    .referrer-table,
+    .reject-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .referrer-table th,
+    .reject-table th {
+        text-align: left;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #666;
+        padding: 0.5rem;
+        border-bottom: 1px solid #333;
+        background: #252530;
+    }
+    .referrer-table td,
+    .reject-table td {
+        padding: 0.55rem 0.5rem;
+        border-bottom: 1px solid #2a2a3a;
+        font-size: 0.85rem;
+        color: #ddd;
+        vertical-align: middle;
+    }
+    .src-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        text-transform: capitalize;
+        font-weight: 500;
+    }
+    .url-cell a {
+        color: #7dd3fc;
+        text-decoration: none;
+        word-break: break-all;
+    }
+    .url-cell a:hover { text-decoration: underline; }
+    .num-cell {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    /* ---- Reject widget ---- */
+    .reject-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .reject-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        background: #2a2a3a;
+        border: 1px solid #383848;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        color: #ddd;
+    }
+    .reject-pill .reject-count {
+        font-weight: 700;
+        color: #fff;
+        font-variant-numeric: tabular-nums;
+    }
+    .reason-pill {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(244, 67, 54, 0.12);
+        color: #fb7185;
+        border-radius: 4px;
+        font-size: 0.72rem;
+        font-weight: 500;
+    }
+    .when-cell {
+        white-space: nowrap;
+        color: #888;
+        font-size: 0.78rem;
+    }
+    .path-cell {
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 0.78rem;
+        color: #aaa;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .ua-cell {
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 0.72rem;
+        color: #888;
+        max-width: 320px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 </style>
