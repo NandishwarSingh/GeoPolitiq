@@ -11,6 +11,7 @@ const { runTagMigration } = require('./tagMigrationService');
 
 // Track scheduler state
 let schedulerTask = null;
+let socialWorkerTask = null;
 let isRunning = false;
 let lastRunTime = null;
 let lastRunResult = null;
@@ -31,6 +32,20 @@ function startScheduler() {
         await runGeneration();
     });
 
+    // Social repost worker — drains pending tasks every 2 minutes (separate task,
+    // doesn't touch the AI cron). Idempotent and rate-limited internally.
+    if (!socialWorkerTask) {
+        const { drainOnce } = require('./social/socialQueue');
+        socialWorkerTask = cron.schedule('*/2 * * * *', async () => {
+            try {
+                await drainOnce();
+            } catch (err) {
+                console.error('[Social] worker tick error:', err.message);
+            }
+        });
+        console.log('[Social] Worker cron started (*/2 * * * *)');
+    }
+
     isRunning = true;
     console.log('[Scheduler] Started successfully');
     return { success: true, message: 'Scheduler started' };
@@ -47,6 +62,11 @@ function stopScheduler() {
 
     schedulerTask.stop();
     schedulerTask = null;
+    if (socialWorkerTask) {
+        socialWorkerTask.stop();
+        socialWorkerTask = null;
+        console.log('[Social] Worker cron stopped');
+    }
     isRunning = false;
     console.log('[Scheduler] Stopped');
     return { success: true, message: 'Scheduler stopped' };
@@ -83,6 +103,35 @@ async function runGeneration() {
             } catch (pushError) {
                 console.error('[Scheduler] Push notifications failed:', pushError.message);
                 result.pushNotifications = { error: pushError.message };
+            }
+
+            // Enqueue social reposts (Phase 0 — actual posting deferred to worker cron)
+            try {
+                const { enqueueForPost } = require('./social/socialQueue');
+                let totalInserted = 0;
+                for (const p of result.posts || []) {
+                    const r = await enqueueForPost(p);
+                    totalInserted += r.inserted;
+                }
+                result.socialEnqueued = totalInserted;
+                console.log(`[Scheduler] Social reposts enqueued: ${totalInserted}`);
+            } catch (socialError) {
+                console.error('[Scheduler] Social enqueue failed:', socialError.message);
+                result.socialEnqueued = { error: socialError.message };
+            }
+
+            // Push the new URLs to IndexNow (Bing / Yandex / Naver / Seznam / Mojeek)
+            try {
+                const { pingIndexNow } = require('./indexNowService');
+                const urls = (result.posts || []).map((p) => `${(process.env.SITE_URL || 'https://geopolitiq.com').replace(/\/$/, '')}/post/${p.slug}`);
+                if (urls.length > 0) {
+                    const ok = await pingIndexNow(urls);
+                    result.indexNow = ok;
+                    console.log(`[Scheduler] IndexNow: ${ok ? 'submitted ' + urls.length + ' urls' : 'skipped'}`);
+                }
+            } catch (idxErr) {
+                console.error('[Scheduler] IndexNow failed:', idxErr.message);
+                result.indexNow = { error: idxErr.message };
             }
         }
 

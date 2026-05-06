@@ -105,5 +105,17 @@ router.get('/analytics', adminAuth, adminController.showAnalytics);
  */
 router.get('/analytics/export', adminAuth, adminController.exportAnalyticsCsv);
 
+
+// ═══════════════════════════════════════════════════════════
+// SOCIAL REPOST DASHBOARD
+// ═══════════════════════════════════════════════════════════
+
+const socialAdmin = require('../controllers/socialAdminController');
+
+router.get('/social', adminAuth, socialAdmin.dashboard);
+router.post('/social/retry/:id', adminAuth, socialAdmin.retry);
+router.post('/social/skip/:id', adminAuth, socialAdmin.skip);
+router.post('/social/drain', adminAuth, socialAdmin.drain);
+
 module.exports = router;
 

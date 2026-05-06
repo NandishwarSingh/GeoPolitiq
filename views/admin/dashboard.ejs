@@ -6,6 +6,60 @@
         </a>
     </header>
 
+    <div class="quick-links">
+        <a href="/admin/ai" class="quick-link-tile">
+            <span class="ql-icon">🤖</span>
+            <span class="ql-body">
+                <strong>AI Generation</strong>
+                <span>Trigger a new batch + view recent runs</span>
+            </span>
+        </a>
+        <a href="/admin/analytics" class="quick-link-tile">
+            <span class="ql-icon">📊</span>
+            <span class="ql-body">
+                <strong>Analytics</strong>
+                <span>Visitors, referrers, popular posts, bot filter</span>
+            </span>
+        </a>
+        <a href="/admin/social" class="quick-link-tile">
+            <span class="ql-icon">📡</span>
+            <span class="ql-body">
+                <strong>Social Reposts</strong>
+                <span>Auto-distribution + per-platform stats</span>
+            </span>
+        </a>
+    </div>
+
+    <style>
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin: 16px 0 28px;
+        }
+        .quick-link-tile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: #252530;
+            border: 1px solid #2a2a3a;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #ddd;
+            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+        .quick-link-tile:hover {
+            border-color: #3b82f6;
+            background: #2a2a3e;
+            transform: translateY(-1px);
+        }
+        .ql-icon { font-size: 1.6rem; line-height: 1; }
+        .ql-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .ql-body strong { color: #fff; font-size: 0.95rem; font-weight: 600; }
+        .ql-body span { color: #888; font-size: 0.8rem; }
+    </style>
+
     <% if (posts && posts.length> 0) { %>
         <div class="posts-table-container">
             <table class="posts-table">
