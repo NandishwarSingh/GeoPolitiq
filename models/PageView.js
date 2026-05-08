@@ -145,7 +145,7 @@ PageViewSchema.statics.getStats = async function () {
 };
 
 // Get country breakdown with percentages (includes Unknown in Others)
-PageViewSchema.statics.getCountryBreakdown = async function (limit = 5) {
+PageViewSchema.statics.getCountryBreakdown = async function (limit = 200) {
     // Get all visits total
     const totalVisits = await this.countDocuments({});
 

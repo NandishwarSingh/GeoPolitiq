@@ -192,23 +192,27 @@ Each piece grounds itself in a recent development, then explains the structural 
 **REGIONS — find ONE recent (last 7 days) story per region. SKIP a region if no real news exists; do not fabricate.**
 1. USA, 2. INDIA, 3. UK, 4. EU, 5. GLOBAL
 
-**ARTICLE STRUCTURE (use exactly this format):**
+**ARTICLE STRUCTURE (use exactly this format — each section must be substantive, NOT a one-liner):**
+
 ## What happened
-A 2–3 sentence factual summary of the recent event, citing the source by name.
+A full paragraph (3–5 sentences) factually summarising the recent event with names, dates, and a primary source cited inline.
+
+## Background context
+Two paragraphs (~200–300 words) explaining the historical or institutional backdrop. What is the longer-running tension, treaty, dispute, or trend this fits into? Reference at least one prior moment so a reader unfamiliar with the topic can follow.
 
 ## Why it matters
-The structural geopolitical or economic context: what underlying force does this event illustrate?
+A full paragraph on the structural geopolitical or economic stakes. Connect to specific actors who win/lose and the underlying force this illustrates.
 
 ## Key facts
-- Bullet points with verified data only
-- Cite source for any number you include: "(Reuters, ${dateISO})"
-- Do not include numbers you cannot source
+- 5–8 bullet points with verified data only
+- Cite source for any number: "(Reuters, ${dateISO})"
+- Do not include numbers or quotes you cannot source
 
 ## Analysis
-Two short paragraphs (~150 words total) connecting this event to broader strategic dynamics.
+Three substantive paragraphs (~400–500 words total). First paragraph: what's the strategic logic of the actors involved. Second: what does this signal about the broader trajectory of regional/global power dynamics. Third: what counter-arguments or alternative readings exist? End the analysis with the strongest opposing view fairly stated.
 
 ## What to watch
-2–3 concrete forward-looking signals (deadlines, scheduled meetings, indicators) — clearly labelled as forecasts, not facts.
+4–6 concrete forward-looking signals — specific deadlines, scheduled meetings, statistical indicators, decisions due — clearly labelled as forecasts not facts. Each with a brief sentence on why it matters.
 
 **OUTPUT — return ONLY a valid JSON array, nothing else:**
 [
@@ -217,7 +221,7 @@ Two short paragraphs (~150 words total) connecting this event to broader strateg
     "tldr": "One sentence on what's happening and why it matters (150–200 chars).",
     "metaTitle": "SEO title (50–60 chars).",
     "metaDescription": "Search snippet (150–160 chars).",
-    "content": "Full ~800–1200 word article following the structure above. Markdown headings allowed.",
+    "content": "Full ~1500–2200 word article following the structure above. Markdown headings allowed. Each section should be substantive — multiple paragraphs of analysis, not bullet-point summaries.",
     "tags": ["topic-tag", "region-tag", "specific-tag"],
     "topicCluster": "USA | INDIA | UK | EU | GLOBAL",
     "authorName": "Staff",
@@ -297,6 +301,7 @@ async function callOpenRouter(prompt, sonarOptions = {}) {
     let retryCount = 0;
     const maxRetries = 100;
     let lastError = null;
+    let consecutiveEmpty = 0;
 
     while (retryCount < maxRetries) {
         const apiKey = getApiKey();
@@ -309,7 +314,7 @@ async function callOpenRouter(prompt, sonarOptions = {}) {
                 model: model,
                 messages: [{ role: 'user', content: prompt }],
                 temperature: 0.5,
-                max_tokens: sonarOptions.max_tokens || 8000,
+                max_tokens: sonarOptions.max_tokens || 16000,
             };
             // Merge Perplexity Sonar / web-search params if provided
             for (const key of [
@@ -338,6 +343,17 @@ async function callOpenRouter(prompt, sonarOptions = {}) {
                 return response.data.choices[0].message.content;
             }
 
+            // Empty content with HTTP 200 — usually means upstream validation error
+            // (e.g. domain-filter too large). Bail after a few consecutive empties so
+            // we don't burn cap looping.
+            consecutiveEmpty++;
+            const upstreamErr = response.data?.error?.message || 'empty content';
+            console.error(`[AI] Empty response (#${consecutiveEmpty}); upstream: ${String(upstreamErr).substring(0, 160)}`);
+            if (consecutiveEmpty >= 3) {
+                const err = new Error(`Sonar returned empty content ${consecutiveEmpty} times: ${upstreamErr}`);
+                err.response = { status: 422, data: response.data };
+                throw err;
+            }
             throw new Error('Invalid response structure from OpenRouter');
         } catch (error) {
             lastError = error;
@@ -501,14 +517,22 @@ function parseResponse(responseText) {
  * Returns { titles: string[], sourceUrls: string[], keywords: string[] }
  */
 async function getExistingPostData() {
+    // Titles: pull the most recent 100 for the avoid-duplication prompt.
+    // Source URLs: only block re-use of URLs from the LAST 30 DAYS — older
+    // sources are fair game again as fresh perspective on new developments.
     const posts = await Post.find({})
         .sort({ createdAt: -1 })
-        .limit(100) // Increased from 50 to 100
-        .select('title sourceUrl')
+        .limit(100)
+        .select('title sourceUrl createdAt')
         .lean();
 
     const titles = posts.map(p => p.title);
-    const sourceUrls = posts.map(p => p.sourceUrl).filter(Boolean);
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const sourceUrls = posts
+        .filter(p => p.createdAt && p.createdAt >= thirtyDaysAgo)
+        .map(p => p.sourceUrl)
+        .filter(Boolean);
 
     // Extract unique keywords from all titles
     const allKeywords = new Set();
@@ -537,56 +561,19 @@ const SONAR_REGIONS = [
         key: 'USA',
         label: 'United States',
         location: { country: 'US' },
-        domains: [
-            'reuters.com', 'apnews.com', 'nytimes.com', 'wsj.com', 'politico.com',
-            'bloomberg.com', 'washingtonpost.com', 'foreignaffairs.com', 'foreignpolicy.com',
-            'theatlantic.com', 'axios.com', 'cnbc.com', 'npr.org', 'defenseone.com',
-            'breakingdefense.com',
-        ],
+        domains: [],
     },
     {
         key: 'EUROPE',
         label: 'Europe / EU',
         location: { country: 'BE' },
-        domains: [
-            'ft.com', 'economist.com', 'politico.eu', 'lemonde.fr', 'spiegel.de',
-            'theguardian.com', 'dw.com', 'euronews.com', 'reuters.com', 'lefigaro.fr',
-            'irishtimes.com', 'elpais.com', 'tagesspiegel.de', 'swissinfo.ch',
-            'brusselstimes.com',
-        ],
-    },
-    {
-        key: 'INDIA',
-        label: 'India',
-        location: { country: 'IN' },
-        domains: [
-            'thehindu.com', 'indianexpress.com', 'livemint.com', 'theprint.in', 'thewire.in',
-            'reuters.com', 'bbc.com', 'ndtv.com', 'hindustantimes.com', 'indiatoday.in',
-            'business-standard.com', 'economictimes.indiatimes.com', 'deccanherald.com',
-            'firstpost.com', 'scroll.in',
-        ],
+        domains: [],
     },
     {
         key: 'UK',
         label: 'United Kingdom',
         location: { country: 'GB' },
-        domains: [
-            'bbc.com', 'theguardian.com', 'ft.com', 'telegraph.co.uk', 'thetimes.co.uk',
-            'independent.co.uk', 'economist.com', 'news.sky.com', 'spectator.co.uk',
-            'newstatesman.com', 'standard.co.uk', 'channel4.com', 'reuters.com',
-            'prospectmagazine.co.uk', 'politico.eu',
-        ],
-    },
-    {
-        key: 'MIDDLE_EAST',
-        label: 'Middle East / Gulf',
-        location: { country: 'AE' },
-        domains: [
-            'aljazeera.com', 'thenationalnews.com', 'arabnews.com', 'gulfnews.com',
-            'jpost.com', 'timesofisrael.com', 'haaretz.com', 'al-monitor.com',
-            'middleeastmonitor.com', 'asharq.com', 'gulf-times.com', 'reuters.com',
-            'bbc.com', 'ft.com', 'alarabiya.net',
-        ],
+        domains: [],
     },
 ];
 
@@ -645,7 +632,7 @@ Two short paragraphs (~150 words) connecting to broader strategic dynamics.
     "tldr": "One-sentence summary (150–200 chars)",
     "metaTitle": "SEO title (50–60 chars)",
     "metaDescription": "Search snippet (150–160 chars)",
-    "content": "Full ~800–1200 word article with the structure above",
+    "content": "Full ~1500–2200 word article with the structure above. Each section needs multiple paragraphs of substantive analysis — not bullet-point summaries.",
     "tags": ["region-tag", "topic-tag", "specific-tag"],
     "topicCluster": "${region.key}",
     "authorName": "Staff",
@@ -671,10 +658,12 @@ function yesterdayMMDDYYYY() {
 async function generateForRegion(region, existingTitles, avoidKeywords) {
     const prompt = buildRegionPrompt(region, existingTitles, avoidKeywords);
     const sonarOptions = {
-        max_tokens: 6000,
+        max_tokens: 16000,
         search_recency_filter: 'day',
         search_after_date_filter: yesterdayMMDDYYYY(),
-        search_domain_filter: region.domains,
+        // search_domain_filter removed — Sonar caps at 10 domains and we
+        // want full-web variety. Source quality is enforced by the
+        // verifier downstream.
         return_images: true,
         return_citations: true,
         web_search_options: {
@@ -700,13 +689,14 @@ async function generateForRegion(region, existingTitles, avoidKeywords) {
  * Includes retry mechanism and passes deduplication data to save function
  */
 function pickBatchKeys() {
-    // Europe is always in; rotate the second region across all 4 non-EU regions.
+    // Only 3 regions configured: USA + EUROPE + UK.
+    // Europe is always in; partner alternates USA / UK.
     // Slot 0 (00:00 UTC) -> EUROPE + USA
-    // Slot 1 (06:00 UTC) -> EUROPE + INDIA
-    // Slot 2 (12:00 UTC) -> EUROPE + UK
-    // Slot 3 (18:00 UTC) -> EUROPE + MIDDLE_EAST
+    // Slot 1 (06:00 UTC) -> EUROPE + UK
+    // Slot 2 (12:00 UTC) -> EUROPE + USA
+    // Slot 3 (18:00 UTC) -> EUROPE + UK
     const slot = Math.floor(new Date().getUTCHours() / 6) % 4;
-    const partner = ['USA', 'INDIA', 'UK', 'MIDDLE_EAST'][slot];
+    const partner = ['USA', 'UK', 'USA', 'UK'][slot];
     return ['EUROPE', partner];
 }
 
@@ -869,11 +859,19 @@ async function runGeneration() {
         const verifyResult = await verifyAndFilterPosts(saved, 70);
 
         console.log(`[AI] Complete. Verified: ${verifyResult.verified}, Deleted: ${verifyResult.deleted}`);
+
+        // Re-query to keep only the verifier-survivors. Without this filter,
+        // IndexNow / push notifications / social-repost enqueue all fan out
+        // to posts that no longer exist (the verifier just deleted them).
+        const survivors = await Post.find({
+            _id: { $in: saved.map(p => p._id) },
+            status: 'published',
+        }).lean();
         return {
             success: true,
             count: verifyResult.verified,
             deleted: verifyResult.deleted,
-            posts: saved.filter(p => true) // Note: some may have been deleted
+            posts: survivors,
         };
     } catch (error) {
         console.error('[AI] Generation failed:', error.message);

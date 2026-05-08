@@ -214,20 +214,62 @@ exports.getPostBySlug = async (req, res) => {
         }
 
         // Get related posts and popular tags in parallel
+        // Fetch 20 related posts for stronger internal-link graph (SEO).
+        // Score by overlap: tag matches outweigh cluster-only matches.
+        // The aggregation computes a relevance score and sorts by it, then
+        // by recency.
         const [relatedPosts, popularTags] = await Promise.all([
-            Post.find({
-                _id: { $ne: post._id },
-                status: 'published',
-                $or: [
-                    { tags: { $in: post.tags || [] } },
-                    { topicCluster: post.topicCluster }
-                ]
-            })
-                .select('slug title tldr tags publishTime featuredImage imageAlt')
-                .sort({ publishTime: -1 })
-                .limit(10) // Initial load, then 5 more via infinite scroll
-                .lean(),
-            getPopularTags()
+            Post.aggregate([
+                {
+                    $match: {
+                        _id: { $ne: post._id },
+                        status: 'published',
+                        $or: [
+                            { tags: { $in: post.tags || [] } },
+                            { topicCluster: post.topicCluster },
+                        ],
+                    },
+                },
+                {
+                    $addFields: {
+                        relevanceScore: {
+                            $add: [
+                                {
+                                    $size: {
+                                        $setIntersection: [
+                                            { $ifNull: ['$tags', []] },
+                                            post.tags || [],
+                                        ],
+                                    },
+                                },
+                                {
+                                    $cond: [
+                                        { $eq: ['$topicCluster', post.topicCluster] },
+                                        1,
+                                        0,
+                                    ],
+                                },
+                            ],
+                        },
+                    },
+                },
+                { $sort: { relevanceScore: -1, publishTime: -1 } },
+                { $limit: 20 },
+                {
+                    $project: {
+                        slug: 1,
+                        title: 1,
+                        tldr: 1,
+                        tags: 1,
+                        publishTime: 1,
+                        featuredImage: 1,
+                        imageAlt: 1,
+                        topicCluster: 1,
+                        relevanceScore: 1,
+                    },
+                },
+            ]),
+            getPopularTags(),
         ]);
 
         // Calculate reading time (200 words per minute)

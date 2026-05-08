@@ -499,7 +499,12 @@ exports.triggerAiGeneration = async (req, res) => {
     try {
         console.log('[Admin] Manual AI generation triggered');
 
-        const result = await aiContentService.runGeneration();
+        // Route through scheduler.triggerManualRun() so manual triggers get
+        // the same fan-out as cron runs (push notifications + social repost
+        // enqueue + IndexNow). Calling aiContentService.runGeneration() directly
+        // skips all of that.
+        const scheduler = require('../services/scheduler');
+        const result = await scheduler.triggerManualRun();
 
         // Log the generation attempt
         await AiGenerationLog.logGeneration({
@@ -581,7 +586,7 @@ exports.showAnalytics = async (req, res) => {
             recentRejections,
         ] = await Promise.all([
             PageView.getStats(),
-            PageView.getCountryBreakdown(5),
+            PageView.getCountryBreakdown(200),
             PageView.getDailyHistory(30),
             PageView.getPopularPosts(10),
             PushSubscription.getStats(),

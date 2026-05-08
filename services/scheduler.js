@@ -133,6 +133,23 @@ async function runGeneration() {
                 console.error('[Scheduler] IndexNow failed:', idxErr.message);
                 result.indexNow = { error: idxErr.message };
             }
+
+            // Push the new URLs to Google Indexing API (best-effort; only fires
+            // if GOOGLE_INDEXING_SERVICE_ACCOUNT is configured).
+            try {
+                const { pingGoogleIndexing, isConfigured } = require('./googleIndexingService');
+                if (isConfigured()) {
+                    const urls = (result.posts || []).map((p) => `${(process.env.SITE_URL || 'https://geopolitiq.com').replace(/\/$/, '')}/post/${p.slug}`);
+                    if (urls.length > 0) {
+                        const ok = await pingGoogleIndexing(urls);
+                        result.googleIndexing = ok;
+                        console.log(`[Scheduler] GoogleIndexing: ${ok ? 'submitted ' + urls.length + ' urls' : 'skipped'}`);
+                    }
+                }
+            } catch (gErr) {
+                console.error('[Scheduler] GoogleIndexing failed:', gErr.message);
+                result.googleIndexing = { error: gErr.message };
+            }
         }
 
         lastRunResult = result;
