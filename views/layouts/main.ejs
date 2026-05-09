@@ -266,13 +266,13 @@
                                                                                                                             <!-- Main stylesheet - loaded async, non-blocking -->
                                                                                                                             <link
                                                                                                                                 rel="preload"
-                                                                                                                                href="/css/style.css"
+                                                                                                                                href="/css/style.css?v=20260509-5"
                                                                                                                                 as="style"
                                                                                                                                 onload="this.onload=null;this.rel='stylesheet';document.documentElement.classList.add('loaded')">
                                                                                                                             <noscript>
                                                                                                                                 <link
                                                                                                                                     rel="stylesheet"
-                                                                                                                                    href="/css/style.css">
+                                                                                                                                    href="/css/style.css?v=20260509-5">
                                                                                                                             </noscript>
 
                                                                                                                             <!-- Fonts - Merriweather from Google Fonts -->
@@ -303,7 +303,8 @@
                 media="print" onload="this.media='all'">
 
             <!-- JS deferred -->
-            <script src="/js/main.js" defer></script>
+            <script src="/js/main.js?v=20260509-5" defer></script>
+            <script src="/js/ads.js?v=20260509-5" defer></script>
 
             <!-- Ensure page visible -->
             <script>setTimeout(function () { document.documentElement.classList.add('loaded') }, 100)</script>

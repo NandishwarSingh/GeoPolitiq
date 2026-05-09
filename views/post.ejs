@@ -1,5 +1,7 @@
 <%# Single Post Page - Newspaper Style %>
 
+    <div class="article-with-rails">
+    <aside class="ad-rail ad-rail-left" data-ad="rail-native" aria-hidden="true"></aside>
     <article class="single-article">
         <%# Category Badge %>
             <% if (post.topicCluster) { %>
@@ -54,6 +56,11 @@
                                                     <%= post.tldr %>
                                                 </p>
                                                 <% } %>
+
+                                                    <%# Inline ad — mobile/tablet only %>
+                                                        <div class="ad-inline" data-ad="inline-native" aria-hidden="true">
+                                                            <span class="ad-label">Advertisement</span>
+                                                        </div>
 
                                                     <%# Article Body %>
                                                         <div class="article-body">
@@ -140,6 +147,8 @@
                                                                                             copied!</span>
                                                                                     </div>
     </article>
+    <aside class="ad-rail ad-rail-right" data-ad="rail-native" aria-hidden="true"></aside>
+</div>
 
     <%# Related Stories %>
         <% if (relatedPosts && relatedPosts.length> 0) { %>

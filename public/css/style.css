@@ -1932,3 +1932,130 @@ html.dark-mode .tag-card:hover {
         text-align: center;
     }
 }
+
+
+/* === ADSTERRA AD LAYOUT === */
+
+/* Header — two 468x60 banners flank the brand title.
+   Hidden on screens narrower than 1200px (936px of ads + ~300px brand
+   needs at least ~1200px to look balanced). */
+.masthead-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+.masthead-brand-row .masthead-brand {
+    flex: 0 1 auto;
+    text-align: center;
+}
+.ad-flank {
+    width: 468px;
+    height: 60px;
+    flex: 0 0 468px;
+    overflow: hidden;
+    display: none;
+    background: transparent;
+}
+.ad-flank iframe {
+    width: 468px !important;
+    height: 60px !important;
+    border: 0;
+    display: block;
+}
+@media (min-width: 1200px) {
+    .ad-flank { display: block; }
+}
+
+/* Article side rails — 160x300 left, native (1:4) right.
+   Hidden below 1200px so we don't squeeze the article column. */
+.article-with-rails {
+    display: block;
+    position: relative;
+}
+.ad-rail {
+    display: none;
+    background: transparent;
+}
+.ad-rail iframe,
+.ad-rail [id^="container-"] {
+    border: 0;
+    display: block;
+    margin: 0 auto;
+}
+@media (min-width: 1200px) {
+    .article-with-rails {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 720px) 220px;
+        justify-content: center;
+        gap: 28px;
+        align-items: stretch;
+        max-width: 1240px;
+        margin: 0 auto;
+    }
+    .article-with-rails > .single-article {
+        max-width: 720px;
+        margin: 0;
+    }
+    .ad-rail {
+        display: block;
+        position: sticky;
+        top: 90px;
+        align-self: start;
+    }
+    .ad-rail-left,
+    .ad-rail-right { width: 220px; min-height: 880px; }
+}
+
+
+/* === ADSTERRA INLINE AD (MOBILE/TABLET) === */
+
+/* In-article inline ad. Visible on phones + tablets, hidden on desktop
+   where the side rails take over. Centered, with a subtle label. */
+.ad-inline {
+    display: block;
+    margin: 1.75rem auto;
+    padding: 0;
+    width: 100%;
+    max-width: 720px;
+    min-height: 100px;
+    overflow: hidden;
+    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.015);
+}
+html.dark-mode .ad-inline {
+    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+}
+.ad-inline .ad-label {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    text-align: right;
+    background: transparent;
+}
+html.dark-mode .ad-inline .ad-label {
+    border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+.ad-inline iframe {
+    width: 100%;
+    max-width: 720px;
+    height: 250px;
+    border: 0;
+    display: block;
+    margin: 0 auto;
+    background: transparent;
+}
+
+/* Hide inline ad on desktop — side rails handle that viewport. */
+@media (min-width: 1200px) {
+    .ad-inline { display: none; }
+}
