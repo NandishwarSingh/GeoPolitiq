@@ -595,7 +595,7 @@ function buildRegionPrompt(region, existingTitles = [], avoidKeywords = []) {
 
 **FOCUS REGION FOR THIS CALL: ${region.label}**
 
-Find ONE recent (last 24 hours) story from this region that has geopolitical significance. The web search has been domain-restricted to credible outlets and date-restricted to the last day; use ONLY what those results actually contain.
+Find ONE recent (last few days) story from this region that has geopolitical significance. Use ONLY facts that appear in your web search results.
 
 **HARD ANTI-HALLUCINATION RULES — VIOLATING ANY OF THESE WILL CAUSE THE FACT-CHECKER TO DELETE YOUR ARTICLE:**
 1. Use ONLY facts that appear in your web search results.
@@ -643,9 +643,16 @@ Two short paragraphs (~150 words) connecting to broader strategic dynamics.
     "imageAlt": ""
   }
 ]
-${avoidPart}${kwPart}
+${avoidPart}
 
 START YOUR RESPONSE WITH [ — NO OTHER TEXT.`;
+}
+
+function sevenDaysAgoMMDDYYYY() {
+    const d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${mm}/${dd}/${d.getFullYear()}`;
 }
 
 function yesterdayMMDDYYYY() {
@@ -659,8 +666,8 @@ async function generateForRegion(region, existingTitles, avoidKeywords) {
     const prompt = buildRegionPrompt(region, existingTitles, avoidKeywords);
     const sonarOptions = {
         max_tokens: 16000,
-        search_recency_filter: 'day',
-        search_after_date_filter: yesterdayMMDDYYYY(),
+        search_recency_filter: 'week',
+        search_after_date_filter: sevenDaysAgoMMDDYYYY(),
         // search_domain_filter removed — Sonar caps at 10 domains and we
         // want full-web variety. Source quality is enforced by the
         // verifier downstream.
